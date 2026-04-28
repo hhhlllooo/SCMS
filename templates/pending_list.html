@@ -1,0 +1,410 @@
+{% extends "base.html" %}
+
+{% block title %}待考评项目 - 工程项目管理系统{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+    <div class="row align-items-center">
+        <div class="col">
+            <h1 class="h3 d-inline align-middle">待考评项目</h1>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped">
+                <thead>
+                    <tr>
+                        <th style="width: 60px;">序号</th>
+                        <th>申报工程名称</th>
+                        <th style="width: 120px;">工程造价(万元)</th>
+                        <th>申报企业名称</th>
+                        <th>联系人及电话</th>
+                        <th style="width: 100px;">参选证号码</th>
+                        <th style="width: 80px;">区域</th>
+                        <th style="width: 120px;">施工许可时间</th>
+                        <th style="width: 220px;">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for project in projects %}
+                    <tr style="cursor: pointer;" class="project-row"
+                        data-project-id="{{ project.id }}"
+                        data-project-name="{{ project.project_name }}"
+                        data-declaring-company="{{ project.declaring_company or '' }}">
+                        <td>{{ start_index + loop.index0 }}</td>
+                        <td>{{ project.project_name }}</td>
+                        <td style="text-align: right;">{{ "%.4f"|format(project.project_cost|float) }}</td>
+                        <td>{{ project.declaring_company or '-' }}</td>
+                        <td>{{ project.contact_phone or '-' }}</td>
+                        <td>{{ project.certificate_number }}</td>
+                        <td>{{ project.region or '-' }}</td>
+                        <td>{{ project.construction_permit_date.strftime('%Y-%m-%d') if project.construction_permit_date else '-' }}</td>
+                        <td onclick="event.stopPropagation();">
+                            <button type="button" class="btn btn-sm btn-outline-success evaluation-btn"
+                                    title="考评录入">
+                                <i class="align-middle" data-feather="edit" style="width:14px;height:14px;"></i> 考评录入
+                            </button>
+                            <a href="{{ url_for('evaluation_form', id=project.id) }}"
+                               class="btn btn-sm btn-outline-primary"
+                               target="_blank"
+                               title="输出考评表单">
+                                <i class="align-middle" data-feather="file-text" style="width:14px;height:14px;"></i> 考评表单
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="9" class="text-center text-muted py-4">暂无待考评项目数据</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if pagination.pages > 1 %}
+        <div class="row align-items-center">
+            <div class="col-md-3">
+                <p class="text-muted mb-0">
+                    共 {{ pagination.total }} 条记录，当前第 {{ pagination.page }} 页，共 {{ pagination.pages }} 页
+                </p>
+            </div>
+            <div class="col-md-3">
+                <div class="d-flex align-items-center">
+                    <span class="text-muted me-2">每页显示：</span>
+                    <select id="perPageSelect" class="form-select form-select-sm" style="width: auto;">
+                        <option value="20" {% if per_page == 20 %}selected{% endif %}>20条/页</option>
+                        <option value="30" {% if per_page == 30 %}selected{% endif %}>30条/页</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center justify-content-md-end mb-0 flex-wrap">
+                        {% if pagination.has_prev %}
+                        <li class="page-item" title="首页">
+                            <a class="page-link" href="{{ url_for('pending_list', page=1, search=search, filter_region=filter_region, per_page=per_page) }}">
+                                <i class="align-middle" data-feather="chevrons-left" style="width:16px;height:16px;"></i>
+                            </a>
+                        </li>
+                        <li class="page-item" title="上一页">
+                            <a class="page-link" href="{{ url_for('pending_list', page=pagination.prev_num, search=search, filter_region=filter_region, per_page=per_page) }}">
+                                <i class="align-middle" data-feather="chevron-left" style="width:16px;height:16px;"></i>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled" title="首页">
+                            <span class="page-link"><i class="align-middle" data-feather="chevrons-left" style="width:16px;height:16px;"></i></span>
+                        </li>
+                        <li class="page-item disabled" title="上一页">
+                            <span class="page-link"><i class="align-middle" data-feather="chevron-left" style="width:16px;height:16px;"></i></span>
+                        </li>
+                        {% endif %}
+
+                        {% for page_num in pagination.iter_pages(left_edge=1, left_current=2, right_current=2, right_edge=1) %}
+                            {% if page_num %}
+                                {% if page_num == pagination.page %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page_num }}</span>
+                                </li>
+                                {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('pending_list', page=page_num, search=search, filter_region=filter_region, per_page=per_page) }}">
+                                        {{ page_num }}
+                                    </a>
+                                </li>
+                                {% endif %}
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if pagination.has_next %}
+                        <li class="page-item" title="下一页">
+                            <a class="page-link" href="{{ url_for('pending_list', page=pagination.next_num, search=search, filter_region=filter_region, per_page=per_page) }}">
+                                <i class="align-middle" data-feather="chevron-right" style="width:16px;height:16px;"></i>
+                            </a>
+                        </li>
+                        <li class="page-item" title="末页">
+                            <a class="page-link" href="{{ url_for('pending_list', page=pagination.pages, search=search, filter_region=filter_region, per_page=per_page) }}">
+                                <i class="align-middle" data-feather="chevrons-right" style="width:16px;height:16px;"></i>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled" title="下一页">
+                            <span class="page-link"><i class="align-middle" data-feather="chevron-right" style="width:16px;height:16px;"></i></span>
+                        </li>
+                        <li class="page-item disabled" title="末页">
+                            <span class="page-link"><i class="align-middle" data-feather="chevrons-right" style="width:16px;height:16px;"></i></span>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var projectRows = document.querySelectorAll('.project-row');
+    projectRows.forEach(function(row) {
+        row.addEventListener('dblclick', function() {
+            var projectId = this.getAttribute('data-project-id');
+            if (projectId) {
+                ProjectModal.view(projectId);
+            }
+        });
+    });
+
+    var searchInput = document.getElementById('searchInput');
+    var clearBtn = document.getElementById('clearSearch');
+
+    if (searchInput && clearBtn) {
+        searchInput.addEventListener('input', function() {
+            if (this.value.trim()) {
+                clearBtn.style.display = 'block';
+            } else {
+                clearBtn.style.display = 'none';
+            }
+        });
+
+        clearBtn.addEventListener('click', function() {
+            searchInput.value = '';
+            this.style.display = 'none';
+            searchInput.focus();
+        });
+    }
+
+    var perPageSelect = document.getElementById('perPageSelect');
+    if (perPageSelect) {
+        perPageSelect.addEventListener('change', function() {
+            var perPage = this.value;
+            var url = new URL(window.location.href);
+            url.searchParams.set('per_page', perPage);
+            url.searchParams.set('page', '1');
+            window.location.href = url.toString();
+        });
+    }
+
+    function saveListState() {
+        var url = new URL(window.location.href);
+        var state = {
+            page: url.searchParams.get('page') || '1',
+            search: url.searchParams.get('search') || '',
+            filter_region: url.searchParams.get('filter_region') || '',
+            per_page: url.searchParams.get('per_page') || '20',
+            timestamp: Date.now(),
+            source: 'pending_list'
+        };
+        sessionStorage.setItem('pending_list_state', JSON.stringify(state));
+    }
+
+    var tableRows = document.querySelectorAll('tbody tr[ondblclick]');
+    tableRows.forEach(function(row) {
+        row.addEventListener('dblclick', function(e) {
+            saveListState();
+        });
+    });
+
+    var viewLinks = document.querySelectorAll('a[href*="/projects/view/"]');
+    viewLinks.forEach(function(link) {
+        link.addEventListener('click', function(e) {
+            saveListState();
+        });
+    });
+});
+</script>
+
+<script>
+(function() {
+    var evaluationOverlay = null;
+    var evaluationContent = null;
+
+    function closeEvaluationModal() {
+        if (evaluationOverlay) {
+            evaluationOverlay.classList.remove('show');
+            document.body.style.overflow = '';
+        }
+    }
+
+    function saveEvaluation() {
+        var projectId = document.getElementById('evalProjectId').value;
+        var inspectionDate = document.getElementById('evalInspectionDate').value;
+        var inspectors = document.getElementById('evalInspectors').value;
+        var preScore = document.getElementById('evalPreScore').value;
+
+        if (!inspectionDate) {
+            Toast.error('请填写市标化检查时间');
+            return;
+        }
+
+        var data = {
+            project_id: projectId,
+            city_standardization_inspection_date: inspectionDate,
+            inspectors: inspectors,
+            pre_score: preScore
+        };
+
+        fetch('/api/evaluation/save', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(function(response) {
+            return response.json();
+        })
+        .then(function(result) {
+            if (result.success) {
+                closeEvaluationModal();
+                Toast.success('考评录入成功！');
+                setTimeout(function() {
+                    window.location.reload();
+                }, 500);
+            } else {
+                Toast.error(result.error || '保存失败');
+            }
+        })
+        .catch(function(error) {
+            Toast.error('保存失败：' + error.message);
+        });
+    }
+
+    function createEvaluationModal() {
+        if (evaluationOverlay) return;
+
+        evaluationOverlay = document.createElement('div');
+        evaluationOverlay.className = 'project-modal-overlay';
+        evaluationOverlay.id = 'evaluationModalOverlay';
+        evaluationOverlay.innerHTML = `
+            <div class="project-modal-container" style="max-width: 680px;">
+                <div class="project-modal-header">
+                    <h5 class="project-modal-title" id="evaluationModalLabel">考评录入</h5>
+                    <button type="button" class="project-modal-close" id="evaluationModalClose" aria-label="关闭">
+                        <i data-feather="x"></i>
+                    </button>
+                </div>
+                <div class="project-modal-body" id="evaluationModalBody">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="mb-3">
+                                <label class="form-label">申报工程名称</label>
+                                <p class="form-control-plaintext fw-bold" id="evalProjectName">-</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="mb-3">
+                                <label class="form-label">申报企业名称</label>
+                                <p class="form-control-plaintext fw-bold" id="evalCompanyName">-</p>
+                            </div>
+                        </div>
+                    </div>
+                    <hr>
+                    <input type="hidden" id="evalProjectId">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">市标化检查时间 <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="evalInspectionDate">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">初评得分 <span class="text-danger">*</span></label>
+                                <input type="number" step="1" class="form-control" id="evalPreScore" placeholder="请输入得分">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="mb-3">
+                                <label class="form-label">检查人员</label>
+                                <input type="text" class="form-control" id="evalInspectors" placeholder="请输入检查人员">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-end gap-2">
+                                <button type="button" class="btn btn-success" id="evalSaveBtn">
+                                    <i class="align-middle" data-feather="check"></i> 提交
+                                </button>
+                                <button type="button" class="btn btn-secondary" id="evalCancelBtn">
+                                    <i class="align-middle" data-feather="x"></i> 取消
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(evaluationOverlay);
+        evaluationContent = document.getElementById('evaluationModalBody');
+
+        document.getElementById('evaluationModalClose').addEventListener('click', closeEvaluationModal);
+        document.getElementById('evalCancelBtn').addEventListener('click', closeEvaluationModal);
+        document.getElementById('evalSaveBtn').addEventListener('click', saveEvaluation);
+
+        evaluationOverlay.addEventListener('click', function(e) {
+            if (e.target === evaluationOverlay) {
+                closeEvaluationModal();
+            }
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && evaluationOverlay.classList.contains('show')) {
+                closeEvaluationModal();
+            }
+        });
+    }
+
+    function openEvaluationModal(projectId, projectName, companyName) {
+        createEvaluationModal();
+
+        document.getElementById('evalProjectId').value = projectId;
+        document.getElementById('evalProjectName').textContent = projectName || '-';
+        document.getElementById('evalCompanyName').textContent = companyName || '-';
+        
+        var today = new Date();
+        var todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+        document.getElementById('evalInspectionDate').value = todayStr;
+        
+        document.getElementById('evalInspectors').value = '';
+        document.getElementById('evalPreScore').value = '';
+
+        evaluationOverlay.classList.add('show');
+        document.body.style.overflow = 'hidden';
+
+        if (window.feather) {
+            feather.replace();
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var evalBtns = document.querySelectorAll('.evaluation-btn');
+        evalBtns.forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var row = this.closest('tr');
+                var projectId = row.getAttribute('data-project-id');
+                var projectName = row.getAttribute('data-project-name');
+                var companyName = row.getAttribute('data-declaring-company');
+                openEvaluationModal(projectId, projectName, companyName);
+            });
+        });
+    });
+})();
+</script>
+{% endblock %}

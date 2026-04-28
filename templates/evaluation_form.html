@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="考评表单">
+    <meta name="author" content="工程项目管理系统">
+    
+    <link rel="shortcut icon" href="{{ url_for('static', filename='img/icons/icon-48x48.png') }}" />
+    <title>考评表单 - {{ project.project_name }}</title>
+    
+    <link href="{{ url_for('static', filename='css/app.css') }}" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: "SimSun", sans-serif, "Times New Roman", Times, serif;
+            background-color: #ffffff;
+            padding: 20px;
+        }
+        
+        .page-container {
+            max-width: 210mm;
+            margin: 0 auto;
+        }
+        
+        .a4-page {
+            width: 210mm;
+            min-height: 297mm;
+            background: white;
+            margin: 0 auto 20px;
+            padding: 27mm;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        
+       
+        .form-title {
+            text-align: center;
+            font-family: "SimHei", sans-serif;
+            font-size: 20px;
+            font-weight: normal;
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+        }
+        
+        .form-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 16px;
+        }
+        
+        .form-table th,
+        .form-table td {
+            border: 0.5px solid #000;
+            padding: 4px 6px;
+            text-align: left;
+            vertical-align: top;
+        }
+        
+        .form-table th {
+            background-color: #ffffff;
+            font-weight: normal;
+            width: 100px;
+            white-space: nowrap;
+        }
+        
+        .form-table .label-cell {
+            background-color: #ffffff;
+            font-family: "SimSun", sans-serif;
+            font-weight: normal;
+            width: 100px;
+            white-space: nowrap;
+            vertical-align: middle;
+        }
+        
+        .form-table .content-cell {
+            min-height: 24px;
+        }
+        
+        .form-table .highlight-section {
+            background-color: #ffffff;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .form-table .sub-label {
+            padding: 5px 0;
+        }
+        
+        .form-table .textarea-cell {
+            min-height: 120px;
+            vertical-align: top;
+        }
+        
+        .form-table .signature-cell {
+            min-height: 80px;
+            vertical-align: middle;
+        }
+        
+        .footer-note {
+            margin-top: 8px;
+            font-size: 14px;
+            line-height: 1.8;
+            color: #000000;
+        }
+        
+        .footer-note p {
+            margin-bottom: 5px;
+        }
+        
+        .footer-signature {
+            margin-top: 10px;
+            text-align: right;
+            font-size: 16px;
+        }
+        
+        .footer-signature .date-line {
+            margin-top: 10px;
+        }
+
+        .form-title2 {
+            text-align: center;
+            font-family: "SimHei", sans-serif;
+            font-size: 28px;
+            font-weight: normal;
+            margin-top: 10px;
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+        }
+
+        .form-txt2 {
+            text-align: left;
+            font-family: "FangSong", sans-serif;
+            font-size: 22px;
+            font-weight: normal;
+            margin-bottom: 0px;
+            letter-spacing: 0px;
+            line-height: 1.5;
+            text-indent: 2em;
+        }
+
+        .form-txt3 {
+            text-align: left;
+            font-family: "FangSong", sans-serif;
+            font-size: 22px;
+            font-weight: normal;
+            margin-bottom: 15px;
+            letter-spacing: 0px;
+            line-height: 1.5;
+        }
+        
+        .form-table2 {           
+            width: 100%;
+            border-collapse: collapse;
+            font-family: "FangSong", sans-serif;
+            font-weight: normal;
+            font-size: 22px;
+        }
+        
+        .form-table2 .label-cell {
+            background-color: #ffffff;
+            width: 100px;
+            white-space: nowrap;
+            vertical-align: middle;
+        }
+        
+        .form-table2 .content-cell {
+            font-size: 18px;
+            min-height: 24px;
+        }
+
+        @media print {
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+            
+            body {
+                background: white;
+                padding: 0;
+                color: #000000 !important;
+            }
+            
+            .page-container {
+                max-width: none;
+            }
+            
+            .a4-page {
+                width: 100%;
+                min-height: auto;
+                box-shadow: none;
+                margin: 0;
+                padding: 10mm;
+            }
+            
+            .form-title,
+            .form-title2,
+            .form-txt2,
+            .form-txt3 {
+                color: #000000 !important;
+            }
+            
+            .form-table th,
+            .form-table td {
+                border: 1px solid #000;
+                color: #000000 !important;
+            }
+            
+            .form-table .label-cell,
+            .form-table2 .label-cell {
+                color: #000000 !important;
+            }
+            
+            .footer-note,
+            .footer-signature {
+                color: #000000 !important;
+            }
+            
+            @page {
+                size: A4;
+                margin-top: 10mm;
+                margin-bottom: 10mm;
+                margin-left: 12mm;
+                margin-right: 12mm;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="print-container">
+        <button type="print-btn" class="btn btn-primary float-end" onclick="window.print()">
+            <i class="align-middle" data-feather="printer"></i> 打印
+        </button>
+    </div>
+    <div class="page-container">
+        <div class="a4-page">
+
+            <h1 class="form-title">宁波市建设工程标化工地专家考评问题反馈表</h1>
+            
+            <table class="form-table">
+                <tr>
+                    <td class="label-cell">工程名称</td>
+                    <td colspan="3" class="content-cell">{{ project.project_name or '' }}</td>
+                </tr>
+                <tr>
+                    <td class="label-cell">施工企业</td>
+                    <td colspan="3" class="content-cell">{{ project.declaring_company or '' }}</td>
+                </tr>
+                <tr>
+                    <td class="label-cell">企业联系人</td>
+                    <td class="content-cell"></td>
+                    <td class="label-cell">联系电话</td>
+                    <td class="content-cell"></td>
+                </tr>
+                <tr>
+                    <td class="label-cell">工程内容</td>
+                    <td class="content-cell"></td>
+                    <td class="label-cell">造价（万元）</td>
+                    <td class="content-cell">{{ "%.4f"|format(project.project_cost|float) if project.project_cost else '' }}</td>
+                </tr>
+                <tr>
+                    <td class="label-cell">考评时间</td>
+                    <td class="content-cell">____年____月____日 第____次考评</td>
+                    <td class="label-cell">考评得分</td>
+                    <td class="content-cell"></td>
+                </tr>
+                <tr>
+                    <td class="label-cell">考评意见</td>
+                    <td colspan="3" class="textarea-cell">
+                        <div class="sub-label">一、工作亮点</div>
+                        <div style="min-height: 160px;"></div>
+                        <div class="sub-label">二、存在主要问题</div>
+                        <div style="min-height: 280px;"></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label-cell">考评组人员<br>签字<br></td>
+                    <td colspan="3" class="signature-cell"></td>
+                </tr>
+            </table>
+            
+            <div class="footer-note">
+                <p>注：1、此表一式四份，市建设安质总站、属地监督站、施工、监理单位各一份；</p>
+                <p style="padding-left: 2em;">2、施工单位在一周内将经建设、监理单位签字确认后的整改情况（附整改前后照片）报属地监督站，由属地监督站负责复查后，报市建设安质总站。</p>
+            </div>
+            
+            <div class="footer-signature">
+                <div>宁波市住房和城乡建设局</div>
+                <div class="date-line">______年____月____日</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="page-container">
+        <div class="a4-page">
+            <h1 class="form-title2">宁波市建筑施工安全生产标准化管理优良工地现场考核工作廉洁告知书</h1> 
+            <br>
+            <table class="form-table2">
+                <tr>
+                    <td class="label-cell">工程名称：</td>
+                    <td colspan="3" class="content-cell" style="line-height: 1.2;">{{ project.project_name or '' }}</td>
+                </tr>
+            </table>
+            <p class="form-txt2" style="margin-top: 10px;">为确保宁波市建筑施工安全生产标准化管理优良工地现场考核检查过程公正、公开、公平、实事求是，根据有关规定向参评单位作以下廉洁告知：</p>
+            <p class="form-txt2">考核检查组各成员承诺在检查期间自觉抵制不正之风，不接受参评单位或有关个人赠送的现金、礼品和有价证券等；不接受可能影响评审的宴请；不以个人名义对申报工程进行所谓“创标指导”，索取或收受任何形式的“好处费”、“指导费”。</p>
+            <p class="form-txt2">参评单位在考核检查组检查期间不得请客送礼，不得以任何形式向考核检查组进行行贿，对违反规定者将上报并撤销参评资格。</p>
+            <br>
+            <p class="form-txt3">宣读人（考核检查组组长）：</p>
+            <p class="form-txt3">考核检查组成员：</p>
+            <p class="form-txt3">建设单位项目负责人：</p>
+            <p class="form-txt3">施工单位项目经理：</p>
+            <p class="form-txt3">监理单位项目总监：</p>
+            <p class="form-txt3">施工单位有关负责人：</p>
+            <p class="form-txt3" style="text-align: right;">考核检查时间：　　　　年　　月　　日</p>
+            <p class="form-txt3">举报投诉电话：0574-89183050</p>
+            <p class="form-txt3" style="font-size: 15px;">注：本廉洁告知书一式两份，一份交现场，另一方作为存档资料交市建设安质总站。</p>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+
+{% block title %}项目列表 - 工程项目管理系统{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+    <div class="row align-items-center">
+        <div class="col">
+            <h1 class="h3 d-inline align-middle">项目列表</h1>
+        </div>
+        <div class="col-auto">
+        <button type="button" class="btn btn-primary" id="addProjectBtn">
+            <i class="align-middle" data-feather="plus"></i> 添加项目
+        </button>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="row align-items-center">
+            <div class="col">
+                <h5 class="card-title mb-0">搜索筛选</h5>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('project_list') }}" class="row g-3 mb-3">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="align-middle" data-feather="search" style="width:16px;height:16px;"></i>
+                    </span>
+                    <input type="text" class="form-control" name="search" 
+                           placeholder="搜索项目名称 / 申报企业 / 参选证号码" 
+                           value="{{ search }}"
+                           id="searchInput">
+                    <button class="btn btn-outline-secondary" type="button" id="clearSearch" title="清除搜索" {% if not search %}style="display:none;"{% endif %}>
+                        <i class="align-middle" data-feather="x" style="width:16px;height:16px;"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select" name="filter_region">
+                    {% for region in region_choices %}
+                    <option value="{{ region }}" {% if filter_region == region %}selected{% endif %}>{{ region if region else '全部区域' }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select" name="filter_status">
+                    {% for status in status_choices %}
+                    <option value="{{ status }}" {% if filter_status == status %}selected{% endif %}>{{ status if status else '全部状态' }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-1">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="align-middle" data-feather="search"></i> 搜索
+                </button>
+            </div>
+            <div class="col-md-1">
+                <a href="{{ url_for('project_list') }}" class="btn btn-secondary w-100">
+                    <i class="align-middle" data-feather="refresh-cw"></i> 重置
+                </a>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-hover table-striped">
+                <thead>
+                    <tr>
+                        <th style="width: 60px;">序号</th>
+                        <th>申报工程名称</th>
+                        <th style="width: 120px;">工程造价(万元)</th>
+                        <th style="min-width: 120px;">申报企业名称</th>
+                        <th>联系人及电话</th>
+                        <th style="width: 100px;">参选证号码</th>
+                        <th style="width: 80px;">创建目标</th>
+                        <th style="width: 80px;">区域</th>
+                        <th style="width: 120px;">标化申报时间</th>
+                        <th style="width: 50px;">状态</th>
+                        <th class="table-remarks">备注</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for project in projects %}
+                    <tr style="cursor: pointer;" class="project-row" data-project-id="{{ project.id }}">
+                        <td>{{ start_index + loop.index0 }}</td>
+                        <td>{{ project.project_name }}</td>
+                        <td style="text-align: right;">{{ "%.4f"|format(project.project_cost|float) }}</td>
+                        <td>{{ project.declaring_company or '-' }}</td>
+                        <td>{{ project.contact_phone or '-' }}</td>
+                        <td>{{ project.certificate_number }}</td>
+                        <td>{{ project.creation_target or '-' }}</td>
+                        <td>{{ project.region or '-' }}</td>
+                        <td>{{ project.standardization_application_date.strftime('%Y-%m-%d') if project.standardization_application_date else '-' }}</td>
+                        <td>
+                            {% if project.status == '正常' %}
+                            <span class="badge bg-success">{{ project.status }}</span>
+                            {% elif project.status == '待考评' %}
+                            <span class="badge bg-warning">{{ project.status }}</span>
+                            {% elif project.status == '已考评' %}
+                            <span class="badge bg-info">{{ project.status }}</span>
+                            {% elif project.status == '许可证' %}
+                            <span class="badge bg-danger">{{ project.status }}</span>
+                            {% else %}
+                            <span class="badge bg-primary">{{ project.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="table-remarks"><span class="text-truncate-2" title="{{ project.remarks or '' }}">{{ project.remarks or '-' }}</span></td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="11" class="text-center text-muted py-4">暂无项目数据</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if pagination.pages > 1 %}
+        <div class="row align-items-center">
+            <div class="col-md-3">
+                <div class="d-flex align-items-center">
+                    <span class="text-muted me-2">每页显示：</span>
+                    <select id="perPageSelect" class="form-select form-select-sm" style="width: auto;">
+                        <option value="20" {% if per_page == 20 %}selected{% endif %}>20条/页</option>
+                        <option value="30" {% if per_page == 30 %}selected{% endif %}>30条/页</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <p class="text-muted mb-0">
+                    共 {{ pagination.total }} 条记录，当前第 {{ pagination.page }} 页，共 {{ pagination.pages }} 页
+                </p>
+            </div>            
+            <div class="col-md-6">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center justify-content-md-end mb-0 flex-wrap">
+                        {% if pagination.has_prev %}
+                        <li class="page-item" title="首页">
+                            <a class="page-link" href="{{ url_for('project_list', page=1, search=search, filter_region=filter_region, filter_status=filter_status, per_page=per_page) }}">
+                                <i class="align-middle" data-feather="chevrons-left" style="width:16px;height:16px;"></i>
+                            </a>
+                        </li>
+                        <li class="page-item" title="上一页">
+                            <a class="page-link" href="{{ url_for('project_list', page=pagination.prev_num, search=search, filter_region=filter_region, filter_status=filter_status, per_page=per_page) }}">
+                                <i class="align-middle" data-feather="chevron-left" style="width:16px;height:16px;"></i>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled" title="首页">
+                            <span class="page-link"><i class="align-middle" data-feather="chevrons-left" style="width:16px;height:16px;"></i></span>
+                        </li>
+                        <li class="page-item disabled" title="上一页">
+                            <span class="page-link"><i class="align-middle" data-feather="chevron-left" style="width:16px;height:16px;"></i></span>
+                        </li>
+                        {% endif %}
+
+                        {% for page_num in pagination.iter_pages(left_edge=1, left_current=2, right_current=2, right_edge=1) %}
+                            {% if page_num %}
+                                {% if page_num == pagination.page %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page_num }}</span>
+                                </li>
+                                {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('project_list', page=page_num, search=search, filter_region=filter_region, filter_status=filter_status, per_page=per_page) }}">
+                                        {{ page_num }}
+                                    </a>
+                                </li>
+                                {% endif %}
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if pagination.has_next %}
+                        <li class="page-item" title="下一页">
+                            <a class="page-link" href="{{ url_for('project_list', page=pagination.next_num, search=search, filter_region=filter_region, filter_status=filter_status, per_page=per_page) }}">
+                                <i class="align-middle" data-feather="chevron-right" style="width:16px;height:16px;"></i>
+                            </a>
+                        </li>
+                        <li class="page-item" title="末页">
+                            <a class="page-link" href="{{ url_for('project_list', page=pagination.pages, search=search, filter_region=filter_region, filter_status=filter_status, per_page=per_page) }}">
+                                <i class="align-middle" data-feather="chevrons-right" style="width:16px;height:16px;"></i>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled" title="下一页">
+                            <span class="page-link"><i class="align-middle" data-feather="chevron-right" style="width:16px;height:16px;"></i></span>
+                        </li>
+                        <li class="page-item disabled" title="末页">
+                            <span class="page-link"><i class="align-middle" data-feather="chevrons-right" style="width:16px;height:16px;"></i></span>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var addProjectBtn = document.getElementById('addProjectBtn');
+    if (addProjectBtn) {
+        addProjectBtn.addEventListener('click', function() {
+            ProjectModal.add();
+        });
+    }
+
+    var projectRows = document.querySelectorAll('.project-row');
+    projectRows.forEach(function(row) {
+        row.addEventListener('dblclick', function() {
+            var projectId = this.getAttribute('data-project-id');
+            if (projectId) {
+                ProjectModal.view(projectId);
+            }
+        });
+    });
+
+    var searchInput = document.getElementById('searchInput');
+    var clearBtn = document.getElementById('clearSearch');
+    
+    if (searchInput && clearBtn) {
+        searchInput.addEventListener('input', function() {
+            if (this.value.trim()) {
+                clearBtn.style.display = 'block';
+            } else {
+                clearBtn.style.display = 'none';
+            }
+        });
+        
+        clearBtn.addEventListener('click', function() {
+            searchInput.value = '';
+            this.style.display = 'none';
+            searchInput.focus();
+        });
+    }
+
+    var perPageSelect = document.getElementById('perPageSelect');
+    if (perPageSelect) {
+        perPageSelect.addEventListener('change', function() {
+            var perPage = this.value;
+            var url = new URL(window.location.href);
+            url.searchParams.set('per_page', perPage);
+            url.searchParams.set('page', '1');
+            window.location.href = url.toString();
+        });
+    }
+
+    function saveListState() {
+        var url = new URL(window.location.href);
+        var state = {
+            page: url.searchParams.get('page') || '1',
+            search: url.searchParams.get('search') || '',
+            filter_region: url.searchParams.get('filter_region') || '',
+            filter_status: url.searchParams.get('filter_status') || '',
+            per_page: url.searchParams.get('per_page') || '20',
+            timestamp: Date.now(),
+            source: 'project_list'
+        };
+        sessionStorage.setItem('project_list_state', JSON.stringify(state));
+    }
+
+    var tableRows = document.querySelectorAll('tbody tr[ondblclick]');
+    tableRows.forEach(function(row) {
+        row.addEventListener('dblclick', function(e) {
+            saveListState();
+        });
+    });
+
+    var viewLinks = document.querySelectorAll('a[href*="/projects/view/"]');
+    viewLinks.forEach(function(link) {
+        link.addEventListener('click', function(e) {
+            saveListState();
+        });
+    });
+});
+</script>
+
+{% endblock %}
+

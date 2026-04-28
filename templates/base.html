@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="工程项目管理系统">
+    <meta name="author" content="Project Management System">
+    
+    <link rel="shortcut icon" href="{{ url_for('static', filename='img/icons/icon-48x48.png') }}" />
+    <title>{% block title %}安全文明施工标准化工地管理系统{% endblock %}</title>
+    
+    <link href="{{ url_for('static', filename='css/app.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/components.css') }}" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div class="wrapper">
+        <nav id="sidebar" class="sidebar js-sidebar">
+            <div class="sidebar-content js-simplebar">
+                <a class="sidebar-brand" href="{{ url_for('dashboard') }}">
+                    <span class="align-middle">标化管理系统</span>
+                </a>
+
+                <ul class="sidebar-nav">
+                    <li class="sidebar-header">
+                        功能菜单
+                    </li>
+
+                    <li class="sidebar-item {% if request.endpoint == 'project_list' or request.endpoint == 'project_add' or request.endpoint == 'project_view' or request.endpoint == 'project_edit' %}active{% endif %}">
+                        <a class="sidebar-link" href="{{ url_for('project_list') }}">
+                            <i class="align-middle" data-feather="list"></i> <span class="align-middle">项目列表</span>
+                        </a>
+                    </li>
+
+                    <li class="sidebar-item {% if request.endpoint == 'pending_list' or request.endpoint == 'evaluation_form' %}active{% endif %}">
+                        <a class="sidebar-link" href="{{ url_for('pending_list') }}">
+                            <i class="align-middle" data-feather="clipboard"></i> <span class="align-middle">待考评项目</span>
+                        </a>
+                    </li>
+
+                    <li class="sidebar-item {% if request.endpoint == 'dashboard' %}active{% endif %}">
+                        <a class="sidebar-link" href="{{ url_for('dashboard') }}">
+                            <i class="align-middle" data-feather="sliders"></i> <span class="align-middle">仪表盘</span>
+                        </a>
+                    </li>
+
+                    <li class="sidebar-header">
+                        系统管理
+                    </li>
+
+                    <li class="sidebar-item {% if request.endpoint == 'settings' %}active{% endif %}">
+                        <a class="sidebar-link" href="{{ url_for('settings') }}">
+                            <i class="align-middle" data-feather="settings"></i> <span class="align-middle">系统设置</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <div class="main">
+            <nav class="navbar navbar-expand navbar-light navbar-bg">
+                <a class="sidebar-toggle js-sidebar-toggle">
+                    <i class="hamburger align-self-center"></i>
+                </a>
+
+                <div class="navbar-collapse collapse">
+                    <ul class="navbar-nav navbar-align">
+                        <li class="nav-item">
+                            <span class="nav-link text-dark">
+                                <i class="align-middle me-1" data-feather="calendar"></i>
+                                {{ now.strftime('%Y年%m月%d日') }}
+                            </span>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <main class="content">
+                <div class="container-fluid p-0">
+                    {% block content %}{% endblock %}
+                </div>
+            </main>
+
+            <footer class="footer">
+                <div class="container-fluid">
+                    <div class="row text-muted">
+                        <div class="col-6 text-start">
+                            <p class="mb-0">
+                                <strong>安全文明施工标准化工地管理系统</strong> &copy; {{ now.year }}
+                            </p>
+                        </div>
+                        <div class="col-6 text-end">
+                            <ul class="list-inline">
+                                <li class="list-inline-item">
+                                    <div class="fw-semibold" id="systemVersion">Version 2.0.0</div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/toast.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/password-modal.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/project-modal.js') }}"></script>
+    <script>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                document.addEventListener('DOMContentLoaded', function() {
+                    {% for category, message in messages %}
+                        {% if category == 'success' %}
+                        Toast.success('{{ message }}');
+                        {% elif category == 'danger' or category == 'error' %}
+                        Toast.error('{{ message }}');
+                        {% elif category == 'warning' %}
+                        Toast.warning('{{ message }}');
+                        {% else %}
+                        Toast.info('{{ message }}');
+                        {% endif %}
+                    {% endfor %}
+                });
+            {% endif %}
+        {% endwith %}
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

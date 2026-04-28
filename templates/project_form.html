@@ -1,0 +1,904 @@
+{% extends "base.html" %}
+
+{% block title %}
+{% if mode == 'add' %}添加项目{% elif mode == 'edit' %}编辑项目{% else %}查看项目{% endif %} - 工程项目管理系统
+{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+    <div class="row align-items-center">
+        <div class="col">
+            <h1 class="h3 d-inline align-middle">
+                {% if mode == 'add' %}添加项目{% elif mode == 'edit' %}编辑项目{% else %}查看项目{% endif %}
+            </h1>
+        </div>
+        <div class="col-auto">
+            {% if mode == 'add' %}
+            <button type="submit" form="projectForm" class="btn btn-primary">
+                <i class="align-middle" data-feather="save"></i> 保存
+            </button>
+            {% elif mode == 'edit' %}
+            <button type="submit" form="projectForm" class="btn btn-primary">
+                <i class="align-middle" data-feather="save"></i> 保存
+            </button>
+            <a href="{{ url_for('project_view', id=project_id) }}" class="btn btn-secondary">
+                <i class="align-middle" data-feather="x"></i> 取消
+            </a>
+            {% else %}
+            <a href="{{ url_for('project_edit', id=project.id) }}" class="btn btn-primary">
+                <i class="align-middle" data-feather="edit"></i> 编辑
+            </a>
+            {% endif %}
+            <a href="{{ url_for('project_list') }}" class="btn btn-outline-secondary" id="backToListBtn">
+                <i class="align-middle" data-feather="arrow-left"></i> 返回列表
+            </a>
+        </div>
+    </div>
+</div>
+
+{% if form_errors and form_errors.general %}
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="align-middle me-2" data-feather="alert-circle"></i>
+    {{ form_errors.general }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endif %}
+
+{% if mode == 'add' %}
+<div class="card mb-3">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="align-middle me-2" data-feather="camera" style="width:18px;height:18px;"></i>
+            OCR 智能识别
+        </h5>
+    </div>
+    <div class="card-body">
+        <div id="ocrUploadArea" class="border border-dashed rounded p-3 text-center d-flex align-items-center justify-content-center" style="cursor: pointer; transition: all 0.2s; min-height: 75px; height: 75px;">
+            <input type="file" id="ocrImageInput" accept="image/*" style="display: none;">
+            <div id="ocrUploadPrompt" class="w-100">
+                <i class="align-middle mb-1" data-feather="upload-cloud" style="width:24px;height:24px;color:#6c757d;"></i>
+                <p class="mb-0 text-muted small">点击或拖拽图片上传（支持 JPG、PNG、BMP）</p>
+            </div>
+            <div id="ocrFilePreview" class="d-none w-100">
+                <div class="d-flex align-items-center justify-content-center">
+                    <a id="ocrImageLink" href="javascript:void(0);" class="d-flex align-items-center text-primary text-decoration-none" style="cursor:pointer;">
+                        <i class="align-middle me-2" data-feather="image" style="width:20px;height:20px;"></i>
+                        <span id="ocrFileName" class="fw-medium small"></span>
+                    </a>
+                    <button type="button" id="ocrRemoveBtn" class="btn btn-link btn-sm text-danger ms-2 p-0">
+                        <i class="align-middle" data-feather="x" style="width:16px;height:16px;"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div id="ocrStatus" class="mt-3 d-none">
+            <div class="d-flex align-items-center">
+                <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                <span class="text-muted">正在识别中，请稍候...</span>
+            </div>
+        </div>
+        <div id="ocrResult" class="mt-3 d-none">
+            <div class="alert alert-success mb-0 d-flex align-items-center">
+                <i class="align-middle me-2" data-feather="check-circle" style="width:18px;height:18px;"></i>
+                <span>识别完成，已自动填充 <strong id="ocrFilledCount">0</strong> 个字段，请检查并确认</span>
+            </div>
+        </div>
+        <div id="ocrError" class="mt-3 d-none">
+            <div class="alert alert-warning mb-0 d-flex align-items-center">
+                <i class="align-middle me-2" data-feather="alert-triangle" style="width:18px;height:18px;"></i>
+                <span id="ocrErrorMsg"></span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST" action="{% if mode == 'add' %}{{ url_for('project_add') }}{% else %}{{ url_for('project_edit', id=project_id) }}{% endif %}" id="projectForm" novalidate>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">申报工程名称（全称）<span class="text-danger">*</span></label>
+                        {% if mode == 'view' %}
+                        <input type="text" class="form-control" value="{{ project.project_name }}" readonly>
+                        {% else %}
+                        <input type="text" class="form-control {% if form_errors and form_errors.project_name %}is-invalid{% endif %}" 
+                               name="project_name" 
+                               value="{{ project.project_name if project else '' }}" 
+                               required>
+                        {% if form_errors and form_errors.project_name %}
+                        <div class="invalid-feedback d-block">
+                            <i class="align-middle me-1" data-feather="alert-triangle" style="width:14px;height:14px;"></i>
+                            {{ form_errors.project_name }}
+                        </div>
+                        {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label class="form-label">工程造价（万元）</label>
+                        {% if mode == 'view' %}
+                        <input type="text" class="form-control" value="{{ '%.4f'|format(project.project_cost|float) }}" readonly>
+                        {% else %}
+                        <input type="number" step="0.0001" class="form-control" name="project_cost" 
+                               value="{{ project.project_cost if project and project.project_cost else '' }}">
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label class="form-label">区域</label>
+                        {% if mode == 'view' %}
+                        <input type="text" class="form-control" value="{{ project.region or '' }}" readonly>
+                        {% else %}
+                        <select class="form-select" name="region">
+                            {% for region in region_choices %}
+                            <option value="{{ region }}" 
+                                    {% if project and project.region == region %}selected{% endif %}>
+                                {{ region if region else '请选择' }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        {% endif %}
+                    </div>
+                </div>                
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">参选证号码<span class="text-danger">*</span></label>
+                        {% if mode == 'view' %}
+                        <input type="text" class="form-control" value="{{ project.certificate_number }}" readonly>
+                        {% else %}
+                        <div class="input-group">
+                            <span class="input-group-text fw-bold">市政</span>
+                            <input type="text" 
+                                   class="form-control {% if form_errors and form_errors.certificate_number %}is-invalid{% endif %}" 
+                                   name="certificate_number_input" 
+                                   id="certificate_number_input" 
+                                   value="{% if project and project.certificate_number %}{{ project.certificate_number[2:] }}{% endif %}" 
+                                   maxlength="4" 
+                                   inputmode="numeric"
+                                   pattern="[0-9]{4}"
+                                   required 
+                                   placeholder="请输入四位数字，如：0001">
+                            <input type="hidden" name="certificate_number" id="certificate_number" 
+                                   value="{{ project.certificate_number if project else '' }}">
+                        </div>
+                        <div class="form-text">只需输入四位数字，系统自动添加"市政"前缀</div>
+                        {% if form_errors and form_errors.certificate_number %}
+                        <div class="invalid-feedback d-block" id="certificate_server_error">
+                            <i class="align-middle me-1" data-feather="alert-triangle" style="width:14px;height:14px;"></i>
+                            {{ form_errors.certificate_number }}
+                        </div>
+                        {% else %}
+                        <div class="invalid-feedback" id="certificate_error">请输入四位有效数字</div>
+                        {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label class="form-label">创建目标</label>
+                        {% if mode == 'view' %}
+                        <input type="text" class="form-control" value="{{ project.creation_target or '' }}" readonly>
+                        {% else %}
+                        <select class="form-select" name="creation_target">
+                            {% for target in target_choices %}
+                            <option value="{{ target }}" 
+                                    {% if project and project.creation_target == target %}selected{% endif %}>
+                                {{ target if target else '请选择' }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label class="form-label">状态<span class="text-danger">*</span></label>
+                        {% if mode == 'view' %}
+                        <input type="text" class="form-control" value="{{ project.status }}" readonly>
+                        {% else %}
+                        <div class="d-flex w-100" role="group" aria-label="状态选择" style="gap: 4px;">
+                            {% for status in status_choices[1:] %}
+                            {% set color_class = 'outline-success' if status == '正常' else ('outline-warning' if status == '待考评' else ('outline-info' if status == '已考评' else 'outline-danger')) %}
+                            <input type="radio" class="btn-check" name="status" id="status_{{ loop.index }}" value="{{ status }}"
+                                   {% if project and project.status == status %}checked{% elif not project and status == '正常' %}checked{% endif %} required>
+                            <label class="btn btn-{{ color_class }} flex-grow-1 text-center" for="status_{{ loop.index }}" style="flex-basis: 0;">{{ status }}</label>
+                            {% endfor %}
+                        </div>
+                        {% if form_errors and form_errors.status %}
+                        <div class="invalid-feedback d-block">
+                            <i class="align-middle me-1" data-feather="alert-triangle" style="width:14px;height:14px;"></i>
+                            {{ form_errors.status }}
+                        </div>
+                        {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">申报企业名称（全称）</label>
+                        {% if mode == 'view' %}
+                        <input type="text" class="form-control" value="{{ project.declaring_company or '' }}" readonly>
+                        {% else %}
+                        <input type="text" class="form-control" name="declaring_company" 
+                               value="{{ project.declaring_company if project else '' }}">
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label class="form-label">项目经理姓名</label>
+                        {% if mode == 'view' %}
+                        <input type="text" class="form-control" value="{{ project.project_manager or '' }}" readonly>
+                        {% else %}
+                        <input type="text" class="form-control" name="project_manager" 
+                               value="{{ project.project_manager if project else '' }}">
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label class="form-label">联系人及电话</label>
+                        {% if mode == 'view' %}
+                        <input type="text" class="form-control" value="{{ project.contact_phone or '' }}" readonly>
+                        {% else %}
+                        <input type="text" class="form-control" name="contact_phone" 
+                               value="{{ project.contact_phone if project else '' }}">
+                        {% endif %}
+                    </div>
+                </div>                
+            </div>
+
+            <div class="row">
+
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">监理企业名称（全称）</label>
+                        {% if mode == 'view' %}
+                        <input type="text" class="form-control" value="{{ project.supervision_company or '' }}" readonly>
+                        {% else %}
+                        <input type="text" class="form-control" name="supervision_company" 
+                               value="{{ project.supervision_company if project else '' }}">
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">项目总监姓名</label>
+                        {% if mode == 'view' %}
+                        <input type="text" class="form-control" value="{{ project.project_director or '' }}" readonly>
+                        {% else %}
+                        <input type="text" class="form-control" name="project_director" 
+                               value="{{ project.project_director if project else '' }}">
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">建设单位名称（全称）</label>
+                        {% if mode == 'view' %}
+                        <input type="text" class="form-control" value="{{ project.construction_unit or '' }}" readonly>
+                        {% else %}
+                        <input type="text" class="form-control" name="construction_unit" 
+                               value="{{ project.construction_unit if project else '' }}">
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">参建企业名称（全称）</label>
+                        {% if mode == 'view' %}
+                        <input type="text" class="form-control" value="{{ project.participating_company or '' }}" readonly>
+                        {% else %}
+                        <input type="text" class="form-control" name="participating_company" 
+                               value="{{ project.participating_company if project else '' }}">
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">开工日期</label>
+                        {% if mode == 'view' %}
+                        <input type="text" class="form-control" 
+                               value="{{ project.start_date.strftime('%Y-%m-%d') if project.start_date else '' }}" readonly>
+                        {% else %}
+                        <input type="date" class="form-control" name="start_date" 
+                               value="{{ project.start_date.strftime('%Y-%m-%d') if project and project.start_date else '' }}">
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">竣工日期</label>
+                        {% if mode == 'view' %}
+                        <input type="text" class="form-control" 
+                               value="{{ project.end_date.strftime('%Y-%m-%d') if project.end_date else '' }}" readonly>
+                        {% else %}
+                        <input type="date" class="form-control" name="end_date" 
+                               value="{{ project.end_date.strftime('%Y-%m-%d') if project and project.end_date else '' }}">
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">标化工地申报时间</label>
+                        {% if mode == 'view' %}
+                        <input type="text" class="form-control" 
+                               value="{{ project.standardization_application_date.strftime('%Y-%m-%d') if project.standardization_application_date else '' }}" readonly>
+                        {% else %}
+                        <input type="date" class="form-control" name="standardization_application_date" 
+                               value="{{ project.standardization_application_date.strftime('%Y-%m-%d') if project and project.standardization_application_date else (now.strftime('%Y-%m-%d') if mode == 'add' else '') }}">
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">施工许可证取得日期</label>
+                        {% if mode == 'view' %}
+                        <input type="text" class="form-control" 
+                               value="{{ project.construction_permit_date.strftime('%Y-%m-%d') if project.construction_permit_date else '' }}" readonly>
+                        {% else %}
+                        <input type="date" class="form-control" name="construction_permit_date" 
+                               value="{{ project.construction_permit_date.strftime('%Y-%m-%d') if project and project.construction_permit_date else '' }}">
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            {% if mode != 'add' %}
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">市标化检查时间</label>
+                        {% if mode == 'view' %}
+                        <input type="text" class="form-control" 
+                               value="{{ project.city_standardization_inspection_date.strftime('%Y-%m-%d') if project.city_standardization_inspection_date else '' }}" readonly>
+                        {% else %}
+                        <input type="date" class="form-control" name="city_standardization_inspection_date" 
+                               value="{{ project.city_standardization_inspection_date.strftime('%Y-%m-%d') if project and project.city_standardization_inspection_date else '' }}">
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">检查人员</label>
+                        {% if mode == 'view' %}
+                        <input type="text" class="form-control" value="{{ project.inspectors or '' }}" readonly>
+                        {% else %}
+                        <input type="text" class="form-control" name="inspectors" 
+                               value="{{ project.inspectors if project else '' }}">
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">备注</label>
+                        {% if mode == 'view' %}
+                        <textarea class="form-control" rows="1" readonly>{{ project.remarks or '' }}</textarea>
+                        {% else %}
+                        <textarea class="form-control" name="remarks" rows="1">{{ project.remarks if project else '' }}</textarea>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">初评得分</label>
+                        {% if mode == 'view' %}
+                        <input type="text" class="form-control" value="{{ project.pre_score if project.pre_score else '' }}" readonly>
+                        {% else %}
+                        <input type="number" step="0.01" class="form-control" name="pre_score" 
+                               value="{{ project.pre_score if project and project.pre_score else '' }}">
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="mb-3">
+                        <label class="form-label">备注</label>
+                        {% if mode == 'view' %}
+                        <textarea class="form-control" rows="1" readonly>{{ project.remarks or '' }}</textarea>
+                        {% else %}
+                        <textarea class="form-control" name="remarks" rows="1">{{ project.remarks if project else '' }}</textarea>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if mode == 'edit' %}
+            <div class="row mt-4">
+                <div class="col-12">
+                    <button type="button" class="btn btn-outline-danger float-end" id="deleteBtn">
+                        <i class="align-middle" data-feather="trash-2"></i> 删除项目
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var certificateInputDisplay = document.getElementById('certificate_number_input');
+    var certificateInputHidden = document.getElementById('certificate_number');
+    
+    {% if mode == 'add' %}
+    if (certificateInputDisplay && certificateInputHidden && !certificateInputDisplay.value) {
+        fetch('/api/certificate/next')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.display_number) {
+                    certificateInputDisplay.value = data.display_number;
+                    certificateInputHidden.value = data.certificate_number;
+                    certificateInputDisplay.classList.remove('is-invalid');
+                    var errorDiv = document.getElementById('certificate_error');
+                    var serverErrorDiv = document.getElementById('certificate_server_error');
+                    if (errorDiv) {
+                        errorDiv.style.display = 'none';
+                    }
+                    if (serverErrorDiv) {
+                        serverErrorDiv.style.display = 'none';
+                    }
+                }
+            })
+            .catch(function(error) {
+                console.error('Error fetching next certificate number:', error);
+            });
+    }
+    {% endif %}
+    
+    if (certificateInputDisplay && certificateInputHidden) {
+        function updateCertificateValue() {
+            var digits = certificateInputDisplay.value.replace(/\D/g, '');
+            certificateInputDisplay.value = digits;
+            if (digits.length === 4) {
+                certificateInputHidden.value = '市政' + digits;
+            } else {
+                certificateInputHidden.value = '';
+            }
+        }
+        
+        certificateInputDisplay.addEventListener('input', function(e) {
+            var originalValue = this.value;
+            var digits = originalValue.replace(/\D/g, '');
+            
+            if (digits !== originalValue) {
+                this.value = digits;
+            }
+            
+            updateCertificateValue();
+            
+            certificateInputDisplay.classList.remove('is-invalid');
+            var errorDiv = document.getElementById('certificate_error');
+            var serverErrorDiv = document.getElementById('certificate_server_error');
+            if (errorDiv) {
+                errorDiv.style.display = 'none';
+            }
+            if (serverErrorDiv) {
+                serverErrorDiv.style.display = 'none';
+            }
+        });
+        
+        certificateInputDisplay.addEventListener('keypress', function(e) {
+            var charCode = (e.which) ? e.which : e.keyCode;
+            if (charCode > 31 && (charCode < 48 || charCode > 57)) {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        certificateInputDisplay.addEventListener('paste', function(e) {
+            e.preventDefault();
+            var pastedText = (e.clipboardData || window.clipboardData).getData('text');
+            var digits = pastedText.replace(/\D/g, '').substring(0, 4);
+            this.value = digits;
+            updateCertificateValue();
+        });
+        
+        function checkCertificate() {
+            var value = certificateInputHidden.value.trim();
+            var errorDiv = document.getElementById('certificate_error');
+            var serverErrorDiv = document.getElementById('certificate_server_error');
+            
+            if (serverErrorDiv) {
+                serverErrorDiv.style.display = 'none';
+            }
+            
+            if (!value) {
+                certificateInputDisplay.classList.add('is-invalid');
+                if (errorDiv) {
+                    errorDiv.textContent = '请输入四位数字';
+                    errorDiv.style.display = 'block';
+                }
+                return;
+            }
+            
+            var pattern = /^市政\d{4}$/;
+            
+            if (!pattern.test(value)) {
+                certificateInputDisplay.classList.add('is-invalid');
+                if (errorDiv) {
+                    errorDiv.textContent = '请输入四位有效数字';
+                    errorDiv.style.display = 'block';
+                }
+                return;
+            }
+            
+            var projectId = {% if mode == 'edit' %}{{ project_id }}{% else %}0{% endif %};
+            
+            fetch('/api/certificate/check?certificate=' + encodeURIComponent(value) + '&project_id=' + projectId)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.exists) {
+                        certificateInputDisplay.classList.add('is-invalid');
+                        if (errorDiv) {
+                            errorDiv.innerHTML = '<i class="align-middle me-1" data-feather="alert-triangle" style="width:14px;height:14px;"></i>该参选证号码已存在，请使用其他号码';
+                            errorDiv.style.display = 'block';
+                            if (window.feather) {
+                                feather.replace();
+                            }
+                        }
+                    } else {
+                        certificateInputDisplay.classList.remove('is-invalid');
+                        if (errorDiv) {
+                            errorDiv.style.display = 'none';
+                        }
+                    }
+                })
+                .catch(function() {
+                });
+        }
+        
+        certificateInputDisplay.addEventListener('blur', checkCertificate);
+    }
+    
+    var projectForm = document.getElementById('projectForm');
+    if (projectForm) {
+        projectForm.addEventListener('submit', function(e) {
+            var certificateInputHidden = document.getElementById('certificate_number');
+            var certificateInputDisplay = document.getElementById('certificate_number_input');
+            
+            if (certificateInputHidden && certificateInputDisplay) {
+                var value = certificateInputHidden.value.trim();
+                if (!value || !/^市政\d{4}$/.test(value)) {
+                    e.preventDefault();
+                    certificateInputDisplay.classList.add('is-invalid');
+                    var errorDiv = document.getElementById('certificate_error');
+                    if (errorDiv) {
+                        errorDiv.textContent = '请输入四位有效数字';
+                        errorDiv.style.display = 'block';
+                    }
+                    certificateInputDisplay.focus();
+                    Toast.error('请正确填写参选证号码（四位数字）');
+                    return false;
+                }
+            }
+        });
+    }
+
+    {% if mode == 'edit' %}
+    var deleteBtn = document.getElementById('deleteBtn');
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', function() {
+            var projectName = '{{ project.project_name if project else "" }}';
+            var projectId = {{ project_id }};
+            
+            PasswordModal.requireAuth().then(function(authenticated) {
+                if (authenticated) {
+                    Confirm.delete('确定要删除项目"' + projectName + '"吗？此操作不可恢复！', '删除确认').then(function(result) {
+                        if (result) {
+                            var form = document.createElement('form');
+                            form.method = 'POST';
+                            form.action = '{{ url_for("project_delete", id=project_id) }}';
+                            document.body.appendChild(form);
+                            form.submit();
+                        }
+                    });
+                }
+            }).catch(function() {});
+        });
+    }
+    {% endif %}
+
+    var firstErrorField = document.querySelector('.is-invalid');
+    if (firstErrorField) {
+        firstErrorField.focus();
+        firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    {% if mode == 'add' %}
+    var ocrImageInput = document.getElementById('ocrImageInput');
+    var ocrUploadArea = document.getElementById('ocrUploadArea');
+    var ocrUploadPrompt = document.getElementById('ocrUploadPrompt');
+    var ocrFilePreview = document.getElementById('ocrFilePreview');
+    var ocrImageLink = document.getElementById('ocrImageLink');
+    var ocrFileName = document.getElementById('ocrFileName');
+    var ocrRemoveBtn = document.getElementById('ocrRemoveBtn');
+    var ocrStatus = document.getElementById('ocrStatus');
+    var ocrResult = document.getElementById('ocrResult');
+    var ocrError = document.getElementById('ocrError');
+    var ocrErrorMsg = document.getElementById('ocrErrorMsg');
+    var ocrFilledCount = document.getElementById('ocrFilledCount');
+    var ocrCurrentFile = null;
+    var ocrCurrentDataUrl = null;
+
+    if (ocrUploadArea && ocrImageInput) {
+        ocrUploadArea.addEventListener('click', function(e) {
+            if (e.target.closest('#ocrRemoveBtn') || e.target.closest('#ocrImageLink')) return;
+            ocrImageInput.click();
+        });
+
+        ocrUploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            ocrUploadArea.classList.add('border-primary', 'bg-light');
+        });
+
+        ocrUploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            ocrUploadArea.classList.remove('border-primary', 'bg-light');
+        });
+
+        ocrUploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            ocrUploadArea.classList.remove('border-primary', 'bg-light');
+            
+            var files = e.dataTransfer.files;
+            if (files.length > 0) {
+                ocrImageInput.files = files;
+                var event = new Event('change', { bubbles: true });
+                ocrImageInput.dispatchEvent(event);
+            }
+        });
+
+        ocrRemoveBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            ocrImageInput.value = '';
+            ocrCurrentFile = null;
+            ocrCurrentDataUrl = null;
+            ocrUploadPrompt.classList.remove('d-none');
+            ocrFilePreview.classList.add('d-none');
+            ocrStatus.classList.add('d-none');
+            ocrResult.classList.add('d-none');
+            ocrError.classList.add('d-none');
+        });
+
+        ocrImageLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (ocrCurrentDataUrl) {
+                var newWindow = window.open('', '_blank');
+                if (newWindow) {
+                    var htmlContent = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>图片预览</title><style>';
+                    htmlContent += 'body{margin:0;padding:20px;background:#f5f5f5;display:flex;justify-content:center;align-items:center;min-height:100vh;overflow:auto;}';
+                    htmlContent += '.container{text-align:center;}';
+                    htmlContent += 'img{max-width:100%;max-height:90vh;box-shadow:0 2px 10px rgba(0,0,0,0.1);cursor:zoom-in;transition:transform 0.3s ease;}';
+                    htmlContent += 'img.zoomed{max-width:none;max-height:none;cursor:zoom-out;transform:scale(1);}';
+                    htmlContent += '.hint{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.7);color:#fff;padding:8px 16px;border-radius:4px;font-size:14px;}';
+                    htmlContent += '</style></head><body>';
+                    htmlContent += '<div class="container"><img id="previewImg" src="' + ocrCurrentDataUrl + '" alt="预览图片"></div>';
+                    htmlContent += '<script>';
+                    htmlContent += 'var img=document.getElementById("previewImg");var isZoomed=false;';
+                    htmlContent += 'img.onclick=function(){';
+                    htmlContent += 'if(isZoomed){img.classList.remove("zoomed");isZoomed=false;}';
+                    htmlContent += 'else{img.classList.add("zoomed");isZoomed=true;}';
+                    htmlContent += '};';
+                    htmlContent += '<\/script></body></html>';
+                    newWindow.document.write(htmlContent);
+                    newWindow.document.close();
+                }
+            }
+        });
+
+        ocrImageInput.addEventListener('change', function(e) {
+            var file = e.target.files[0];
+            if (!file) return;
+
+            var allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/bmp', 'image/gif', 'image/webp'];
+            if (allowedTypes.indexOf(file.type) === -1) {
+                Toast.error('不支持的图片格式，请上传 JPG、PNG 等常见图片格式');
+                return;
+            }
+
+            ocrCurrentFile = file;
+
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                ocrCurrentDataUrl = e.target.result;
+                ocrFileName.textContent = file.name;
+                ocrUploadPrompt.classList.add('d-none');
+                ocrFilePreview.classList.remove('d-none');
+                ocrStatus.classList.remove('d-none');
+                ocrResult.classList.add('d-none');
+                ocrError.classList.add('d-none');
+                if (window.feather) {
+                    feather.replace();
+                }
+            };
+            reader.readAsDataURL(file);
+
+            var formData = new FormData();
+            formData.append('image', file);
+
+            fetch('/api/ocr', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                ocrStatus.classList.add('d-none');
+
+                if (data.success) {
+                    ocrResult.classList.remove('d-none');
+                    if (window.feather) {
+                        feather.replace();
+                    }
+
+                    var extracted = data.extracted;
+                    var filledCount = 0;
+
+                    var fieldMapping = {
+                        'project_name': 'project_name',
+                        'project_cost': 'project_cost',
+                        'declaring_company': 'declaring_company',
+                        'project_manager': 'project_manager',
+                        'contact_phone': 'contact_phone',
+                        'supervision_company': 'supervision_company',
+                        'project_director': 'project_director',
+                        'construction_unit': 'construction_unit',
+                        'start_date': 'start_date',
+                        'end_date': 'end_date'
+                    };
+
+                    for (var key in fieldMapping) {
+                        if (extracted[key]) {
+                            var input = document.querySelector('input[name="' + fieldMapping[key] + '"]');
+                            if (input && !input.value) {
+                                input.value = extracted[key];
+                                input.classList.add('border-success');
+                                filledCount++;
+                                (function(el) {
+                                    setTimeout(function() {
+                                        el.classList.remove('border-success');
+                                    }, 3000);
+                                })(input);
+                            }
+                        }
+                    }
+
+                    ocrFilledCount.textContent = filledCount;
+
+                    if (filledCount > 0) {
+                        Toast.success('成功识别并填充了 ' + filledCount + ' 个字段，请检查并确认');
+                    } else {
+                        Toast.warning('未能识别到有效信息，请手动填写');
+                    }
+                } else {
+                    ocrError.classList.remove('d-none');
+                    ocrErrorMsg.textContent = data.error || '识别失败，请重试';
+                    if (window.feather) {
+                        feather.replace();
+                    }
+                    Toast.error(data.error || 'OCR识别失败');
+                }
+            })
+            .catch(function(err) {
+                ocrStatus.classList.add('d-none');
+                ocrError.classList.remove('d-none');
+                ocrErrorMsg.textContent = '网络错误，请检查连接后重试';
+                if (window.feather) {
+                    feather.replace();
+                }
+                Toast.error('网络错误，请重试');
+            });
+        });
+    }
+    {% endif %}
+
+    var backToListBtn = document.getElementById('backToListBtn');
+    if (backToListBtn) {
+        backToListBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            var projectListState = sessionStorage.getItem('project_list_state');
+            var pendingListState = sessionStorage.getItem('pending_list_state');
+            var maxAge = 30 * 60 * 1000;
+            var targetState = null;
+            var targetUrl = null;
+            
+            if (projectListState && pendingListState) {
+                try {
+                    var pState = JSON.parse(projectListState);
+                    var dState = JSON.parse(pendingListState);
+                    if (pState.timestamp > dState.timestamp) {
+                        targetState = pState;
+                        targetUrl = '{{ url_for("project_list") }}';
+                    } else {
+                        targetState = dState;
+                        targetUrl = '{{ url_for("pending_list") }}';
+                    }
+                } catch (err) {
+                }
+            } else if (projectListState) {
+                try {
+                    targetState = JSON.parse(projectListState);
+                    targetUrl = '{{ url_for("project_list") }}';
+                } catch (err) {
+                }
+            } else if (pendingListState) {
+                try {
+                    targetState = JSON.parse(pendingListState);
+                    targetUrl = '{{ url_for("pending_list") }}';
+                } catch (err) {
+                }
+            }
+            
+            if (targetState && targetUrl) {
+                try {
+                    if (targetState.timestamp && (Date.now() - targetState.timestamp) < maxAge) {
+                        var params = new URLSearchParams();
+                        if (targetState.page && targetState.page !== '1') {
+                            params.set('page', targetState.page);
+                        }
+                        if (targetState.search) {
+                            params.set('search', targetState.search);
+                        }
+                        if (targetState.filter_region) {
+                            params.set('filter_region', targetState.filter_region);
+                        }
+                        if (targetState.filter_status) {
+                            params.set('filter_status', targetState.filter_status);
+                        }
+                        if (targetState.per_page && targetState.per_page !== '20') {
+                            params.set('per_page', targetState.per_page);
+                        }
+                        
+                        var queryString = params.toString();
+                        if (queryString) {
+                            window.location.href = targetUrl + '?' + queryString;
+                            return;
+                        } else {
+                            window.location.href = targetUrl;
+                            return;
+                        }
+                    }
+                } catch (err) {
+                }
+            }
+            
+            window.location.href = '{{ url_for("project_list") }}';
+        });
+    }
+});
+</script>
+{% endblock %}

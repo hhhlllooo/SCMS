@@ -1,0 +1,512 @@
+{% extends "base.html" %}
+
+{% block title %}系统设置 - 工程项目管理系统{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <h1 class="h3 d-inline align-middle">系统设置</h1>
+</div>
+
+<div class="row g-4">
+    <div class="col-12 col-lg-6">
+        <div class="card h-100">
+            <div class="card-header bg-primary bg-opacity-10 border-bottom border-primary border-opacity-25">
+                <h5 class="card-title mb-0 text-primary">
+                    <i class="align-middle me-2" data-feather="file-text" style="width: 20px; height: 20px;"></i>
+                    数据导入导出
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-4 pb-4 border-bottom">
+                    <h6 class="text-muted text-uppercase mb-3">
+                        <i class="align-middle me-2" data-feather="download" style="width: 18px; height: 18px;"></i>
+                        数据导出
+                    </h6>
+                    <form method="POST" action="{{ url_for('export_csv') }}" id="exportCsvForm">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">按区域筛选</label>
+                                <select class="form-select" name="export_region">
+                                    {% for region in region_choices %}
+                                    <option value="{{ region }}">{{ region if region else '全部区域' }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">按状态筛选</label>
+                                <select class="form-select" name="export_status">
+                                    {% for status in status_choices %}
+                                    <option value="{{ status }}">{{ status if status else '全部状态' }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">标化工地申报时间范围</label>
+                                <div class="row g-2 align-items-center">
+                                    <div class="col">
+                                        <input type="date" class="form-control" name="date_from" placeholder="开始日期">
+                                    </div>
+                                    <div class="col-auto">
+                                        <span class="text-muted">至</span>
+                                    </div>
+                                    <div class="col">
+                                        <input type="date" class="form-control" name="date_to" placeholder="结束日期">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="align-middle" data-feather="download"></i> 导出CSV文件
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <div>
+                    <h6 class="text-muted text-uppercase mb-3">
+                        <i class="align-middle me-2" data-feather="upload" style="width: 18px; height: 18px;"></i>
+                        数据导入
+                    </h6>
+                    <form method="POST" action="{{ url_for('import_csv') }}" enctype="multipart/form-data" id="importForm">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label">选择CSV文件</label>
+                                <input type="file" class="form-control" name="csv_file" accept=".csv" required>
+                                <div class="form-text">
+                                    文件格式要求：第一行为标题行，字段名称需与导出格式一致。
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="align-middle" data-feather="upload"></i> 导入数据
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-6">
+        <div class="card h-100">
+            <div class="card-header bg-success bg-opacity-10 border-bottom border-success border-opacity-25">
+                <h5 class="card-title mb-0 text-success">
+                    <i class="align-middle me-2" data-feather="database" style="width: 20px; height: 20px;"></i>
+                    数据库管理
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-4 pb-4 border-bottom">
+                    <h6 class="text-muted text-uppercase mb-3">
+                        <i class="align-middle me-2" data-feather="save" style="width: 18px; height: 18px;"></i>
+                        数据库备份
+                    </h6>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="card h-100 border">
+                                <div class="card-header bg-light py-2">
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar bg-success bg-opacity-10 rounded me-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                            <i class="align-middle text-success" data-feather="play" style="width: 20px; height: 20px;"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0">手动备份</h6>
+                                            <small class="text-muted">立即执行</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted mb-3">立即创建当前数据库的备份文件。</p>
+                                    <form method="POST" action="{{ url_for('backup_database') }}" id="backupForm">
+                                        <button type="submit" class="btn btn-success w-100">
+                                            <i class="align-middle" data-feather="save"></i> 立即备份
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card h-100 border">
+                                <div class="card-header bg-light py-2">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar bg-primary bg-opacity-10 rounded me-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                <i class="align-middle text-primary" data-feather="clock" style="width: 20px; height: 20px;"></i>
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-0">自动备份</h6>
+                                                <small class="text-muted">定时执行</small>
+                                            </div>
+                                        </div>
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="autoBackupSwitch" {% if auto_backup_config.enabled %}checked{% endif %}>
+                                            <label class="form-check-label" for="autoBackupSwitch">{% if auto_backup_config.enabled %}已启用{% else %}已禁用{% endif %}</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted mb-3">按设定周期自动备份数据库。</p>
+                                    <button type="button" class="btn btn-outline-primary w-100" id="configAutoBackupBtn" data-bs-toggle="collapse" data-bs-target="#autoBackupConfig">
+                                        <i class="align-middle" data-feather="settings"></i> 配置选项
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="collapse {% if auto_backup_config.enabled %}show{% endif %}" id="autoBackupConfig">
+                                <div class="card card-body border">
+                                    <h6 class="text-muted text-uppercase mb-3">
+                                        <i class="align-middle me-2" data-feather="sliders" style="width: 18px; height: 18px;"></i>
+                                        备份配置
+                                    </h6>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">备份周期</label>
+                                            <select class="form-select" id="backupPeriod">
+                                                <option value="daily" {% if auto_backup_config.period == 'daily' %}selected{% endif %}>每天</option>
+                                                <option value="weekly" {% if auto_backup_config.period == 'weekly' %}selected{% endif %}>每周</option>
+                                                <option value="monthly" {% if auto_backup_config.period == 'monthly' %}selected{% endif %}>每月</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">备份时间</label>
+                                            <input type="time" class="form-control" id="backupTime" value="{{ auto_backup_config.time or '02:00' }}">
+                                        </div>
+                                        <div class="col-md-6" id="weeklyDaySelect" {% if auto_backup_config.period != 'weekly' %}style="display: none;"{% endif %}>
+                                            <label class="form-label">备份日期</label>
+                                            <select class="form-select" id="backupDay">
+                                                <option value="1" {% if auto_backup_config.day == 1 %}selected{% endif %}>周一</option>
+                                                <option value="2" {% if auto_backup_config.day == 2 %}selected{% endif %}>周二</option>
+                                                <option value="3" {% if auto_backup_config.day == 3 %}selected{% endif %}>周三</option>
+                                                <option value="4" {% if auto_backup_config.day == 4 %}selected{% endif %}>周四</option>
+                                                <option value="5" {% if auto_backup_config.day == 5 %}selected{% endif %}>周五</option>
+                                                <option value="6" {% if auto_backup_config.day == 6 %}selected{% endif %}>周六</option>
+                                                <option value="0" {% if auto_backup_config.day == 0 %}selected{% endif %}>周日</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6" id="monthlyDaySelect" {% if auto_backup_config.period != 'monthly' %}style="display: none;"{% endif %}>
+                                            <label class="form-label">备份日期</label>
+                                            <select class="form-select" id="backupMonthDay">
+                                                {% for i in range(1, 29) %}
+                                                <option value="{{ i }}" {% if auto_backup_config.month_day == i %}selected{% endif %}>每月{{ i }}日</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">保留数量</label>
+                                            <select class="form-select" id="backupRetention">
+                                                <option value="5" {% if auto_backup_config.retention == 5 %}selected{% endif %}>最近 5 个</option>
+                                                <option value="10" {% if auto_backup_config.retention == 10 %}selected{% endif %}>最近 10 个</option>
+                                                <option value="20" {% if auto_backup_config.retention == 20 %}selected{% endif %}>最近 20 个</option>
+                                                <option value="0" {% if auto_backup_config.retention == 0 %}selected{% endif %}>保留全部</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6 d-flex align-items-end">
+                                            <button type="button" class="btn btn-primary w-100" id="saveBackupConfig">
+                                                <i class="align-middle" data-feather="check"></i> 保存配置
+                                            </button>
+                                        </div>
+                                    </div>
+                                    {% if auto_backup_config.enabled and auto_backup_config.next_backup %}
+                                    <div class="mt-3 pt-3 border-top">
+                                        <div class="d-flex align-items-center text-muted">
+                                            <i class="align-middle me-2" data-feather="clock" style="width: 18px; height: 18px;"></i>
+                                            <span>下次备份时间：<strong class="text-dark">{{ auto_backup_config.next_backup }}</strong></span>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h6 class="text-muted text-uppercase mb-3">
+                        <i class="align-middle me-2" data-feather="refresh-cw" style="width: 18px; height: 18px;"></i>
+                        数据库恢复
+                    </h6>
+                    
+                    {% if recent_backups %}
+                    <div class="mb-3">
+                        <label class="form-label">最近备份文件</label>
+                        <div class="table-responsive" style="max-height: 150px;">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th>文件名</th>
+                                        <th>大小</th>
+                                        <th>时间</th>
+                                        <th class="text-center">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for backup in recent_backups %}
+                                    <tr>
+                                        <td class="text-truncate" style="max-width: 180px;" title="{{ backup.name }}">{{ backup.name }}</td>
+                                        <td>{{ backup.size }} KB</td>
+                                        <td>{{ backup.date.split(' ')[0] }}</td>
+                                        <td class="text-center">
+                                            <form method="POST" action="{{ url_for('restore_database') }}" style="display:inline;" class="restore-recent-form">
+                                                <input type="hidden" name="backup_filename" value="{{ backup.name }}">
+                                                <button type="submit" class="btn btn-outline-warning">恢复</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <form method="POST" action="{{ url_for('restore_database') }}" enctype="multipart/form-data" id="restoreForm">
+                        <div class="row g-3 align-items-end">
+                            <div class="col">
+                                <label class="form-label">选择备份文件</label>
+                                <input type="file" class="form-control" name="backup_file" accept=".db">
+                            </div>
+                            <div class="col-auto">
+                                <button type="submit" class="btn btn-warning" id="restoreBtn">
+                                    <i class="align-middle" data-feather="refresh-cw"></i> 恢复数据库
+                                </button>
+                            </div>
+                        </div>
+                        <div class="form-text">
+                            注意：恢复操作将覆盖当前数据库，请谨慎操作。
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-secondary bg-opacity-10 border-bottom border-secondary border-opacity-25">
+                <h5 class="card-title mb-0 text-secondary">
+                    <i class="align-middle me-2" data-feather="info" style="width: 20px; height: 20px;"></i>
+                    系统信息
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-6 col-md-4 col-lg-2">
+                        <div class="text-center p-3 bg-light rounded h-100">
+                            <div class="text-muted mb-1">系统名称</div>
+                            <div class="fw-semibold">安全文明施工标准化工地管理系统</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4 col-lg-2">
+                        <div class="text-center p-3 bg-light rounded h-100">
+                            <div class="text-muted mb-1">系统版本</div>
+                            <div class="fw-semibold" id="systemVersion">2.0.0</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4 col-lg-2">
+                        <div class="text-center p-3 bg-light rounded h-100">
+                            <div class="text-muted mb-1">技术栈</div>
+                            <div class="fw-semibold">Flask + SQLite + Bootstrap 5</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4 col-lg-2">
+                        <div class="text-center p-3 bg-light rounded h-100">
+                            <div class="text-muted mb-1">Python版本</div>
+                            <div class="fw-semibold" id="pythonVersion">-</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4 col-lg-2">
+                        <div class="text-center p-3 bg-light rounded h-100">
+                            <div class="text-muted mb-1">OCR引擎</div>
+                            <div class="fw-semibold">RapidOCR</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4 col-lg-2">
+                        <div class="text-center p-3 bg-light rounded h-100">
+                            <div class="text-muted mb-1">数据库状态</div>
+                            <div class="fw-semibold text-success">正常运行</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('pythonVersion').textContent = '{{ python_version|default("3.7.3+") }}';
+    
+    var exportCsvForm = document.getElementById('exportCsvForm');
+    if (exportCsvForm) {
+        exportCsvForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            PasswordModal.requireAuth().then(function(authenticated) {
+                if (authenticated) {
+                    exportCsvForm.submit();
+                }
+            }).catch(function() {});
+        });
+    }
+    
+    var restoreBtn = document.getElementById('restoreBtn');
+    var restoreForm = document.getElementById('restoreForm');
+    
+    if (restoreBtn && restoreForm) {
+        restoreBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            var fileInput = restoreForm.querySelector('input[name="backup_file"]');
+            if (fileInput && fileInput.files.length > 0) {
+                PasswordModal.requireAuth().then(function(authenticated) {
+                    if (authenticated) {
+                        Confirm.create({
+                            title: '恢复数据库',
+                            message: '确定要恢复数据库吗？此操作将覆盖当前数据，请确保已做好备份！',
+                            type: 'danger',
+                            confirmText: '确认恢复',
+                            confirmBtnClass: 'btn-danger'
+                        }).then(function(result) {
+                            if (result) {
+                                restoreForm.submit();
+                            }
+                        });
+                    }
+                }).catch(function() {});
+            } else {
+                Toast.warning('请先选择备份文件');
+            }
+        });
+    }
+    
+    var restoreRecentForms = document.querySelectorAll('.restore-recent-form');
+    restoreRecentForms.forEach(function(form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            PasswordModal.requireAuth().then(function(authenticated) {
+                if (authenticated) {
+                    Confirm.create({
+                        title: '恢复数据库',
+                        message: '确定要恢复此备份吗？此操作将覆盖当前数据！',
+                        type: 'danger',
+                        confirmText: '确认恢复',
+                        confirmBtnClass: 'btn-danger'
+                    }).then(function(result) {
+                        if (result) {
+                            form.submit();
+                        }
+                    });
+                }
+            }).catch(function() {});
+        });
+    });
+    
+    var autoBackupSwitch = document.getElementById('autoBackupSwitch');
+    var autoBackupConfig = document.getElementById('autoBackupConfig');
+    var switchLabel = autoBackupSwitch.nextElementSibling;
+    var configBtn = document.getElementById('configAutoBackupBtn');
+    
+    if (autoBackupSwitch) {
+        autoBackupSwitch.addEventListener('change', function() {
+            var enabled = this.checked;
+            
+            fetch('/settings/auto-backup/config', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    enabled: enabled,
+                    period: document.getElementById('backupPeriod').value,
+                    time: document.getElementById('backupTime').value,
+                    day: parseInt(document.getElementById('backupDay').value),
+                    month_day: parseInt(document.getElementById('backupMonthDay').value),
+                    retention: parseInt(document.getElementById('backupRetention').value)
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (enabled) {
+                        autoBackupConfig.classList.add('show');
+                        switchLabel.textContent = '已启用';
+                        Toast.success('自动备份已开启');
+                    } else {
+                        switchLabel.textContent = '已禁用';
+                        Toast.success('自动备份已关闭');
+                    }
+                } else {
+                    Toast.error(data.message || '设置失败');
+                    this.checked = !enabled;
+                }
+            })
+            .catch(() => {
+                Toast.error('设置失败');
+                this.checked = !enabled;
+            });
+        });
+    }
+    
+    var backupPeriod = document.getElementById('backupPeriod');
+    var weeklyDaySelect = document.getElementById('weeklyDaySelect');
+    var monthlyDaySelect = document.getElementById('monthlyDaySelect');
+    
+    if (backupPeriod) {
+        backupPeriod.addEventListener('change', function() {
+            weeklyDaySelect.style.display = this.value === 'weekly' ? 'block' : 'none';
+            monthlyDaySelect.style.display = this.value === 'monthly' ? 'block' : 'none';
+        });
+    }
+    
+    var saveBackupConfig = document.getElementById('saveBackupConfig');
+    if (saveBackupConfig) {
+        saveBackupConfig.addEventListener('click', function() {
+            var time = document.getElementById('backupTime').value;
+            if (!time) {
+                Toast.warning('请选择备份时间');
+                return;
+            }
+            
+            var config = {
+                enabled: autoBackupSwitch.checked,
+                period: document.getElementById('backupPeriod').value,
+                time: time,
+                day: parseInt(document.getElementById('backupDay').value),
+                month_day: parseInt(document.getElementById('backupMonthDay').value),
+                retention: parseInt(document.getElementById('backupRetention').value)
+            };
+            
+            fetch('/settings/auto-backup/config', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(config)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Toast.success('配置保存成功');
+                    if (data.next_backup) {
+                        location.reload();
+                    }
+                } else {
+                    Toast.error(data.message || '保存失败');
+                }
+            })
+            .catch(() => {
+                Toast.error('保存失败');
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

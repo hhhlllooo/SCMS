@@ -1,0 +1,424 @@
+{% macro format_date(value) %}
+{% if value is none or value == '' %}
+{{ '' }}
+{% elif value is string %}
+{{ value }}
+{% elif value.strftime is defined %}
+{{ value.strftime('%Y-%m-%d') }}
+{% else %}
+{{ '' }}
+{% endif %}
+{% endmacro %}
+
+{% if form_errors and form_errors.general %}
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="align-middle me-2" data-feather="alert-circle"></i>
+    {{ form_errors.general }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endif %}
+
+{% if mode == 'add' %}
+<div class="card mb-3">
+    <div class="card-body">
+        <div id="ocrUploadArea" class="border border-dashed rounded p-3 text-center d-flex align-items-center justify-content-center" style="cursor: pointer; transition: all 0.2s; min-height: 75px; height: 75px;">
+            <input type="file" id="ocrImageInput" accept="image/*" style="display: none;">
+            <div id="ocrUploadPrompt" class="w-100">
+                <i class="align-middle mb-1" data-feather="upload-cloud" style="width:24px;height:24px;color:#6c757d;"></i>
+                <p class="mb-0 text-muted small"> 【OCR识别】 点击或拖拽图片上传（支持 JPG、PNG、BMP）</p>
+            </div>
+            <div id="ocrFilePreview" class="d-none w-100">
+                <div class="d-flex align-items-center justify-content-center">
+                    <a id="ocrImageLink" href="javascript:void(0);" class="d-flex align-items-center text-primary text-decoration-none" style="cursor:pointer;">
+                        <i class="align-middle me-2" data-feather="image" style="width:20px;height:20px;"></i>
+                        <span id="ocrFileName" class="fw-medium small"></span>
+                    </a>
+                    <button type="button" id="ocrRemoveBtn" class="btn btn-link btn-sm text-danger ms-2 p-0">
+                        <i class="align-middle" data-feather="x" style="width:16px;height:16px;"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div id="ocrStatus" class="mt-3 d-none">
+            <div class="d-flex align-items-center">
+                <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                <span class="text-muted">正在识别中，请稍候...</span>
+            </div>
+        </div>
+        <div id="ocrResult" class="mt-3 d-none">
+            <div class="alert alert-success mb-0 d-flex align-items-center">
+                <i class="align-middle me-2" data-feather="check-circle" style="width:18px;height:18px;"></i>
+                <span>识别完成，已自动填充 <strong id="ocrFilledCount">0</strong> 个字段，请检查并确认</span>
+            </div>
+        </div>
+        <div id="ocrError" class="mt-3 d-none">
+            <div class="alert alert-warning mb-0 d-flex align-items-center">
+                <i class="align-middle me-2" data-feather="alert-triangle" style="width:18px;height:18px;"></i>
+                <span id="ocrErrorMsg"></span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST" action="{% if mode == 'add' %}{{ url_for('project_add') }}{% else %}{{ url_for('project_edit', id=project_id) }}{% endif %}?modal=1" id="projectForm" novalidate>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">申报工程名称（全称）<span class="text-danger">*</span></label>
+                        {% if mode == 'view' %}
+                        <input type="text" class="form-control" value="{{ project.project_name }}" readonly>
+                        {% else %}
+                        <input type="text" class="form-control {% if form_errors and form_errors.project_name %}is-invalid{% endif %}" 
+                               name="project_name" 
+                               value="{{ project.project_name if project else '' }}" 
+                               required>
+                        {% if form_errors and form_errors.project_name %}
+                        <div class="invalid-feedback d-block">
+                            <i class="align-middle me-1" data-feather="alert-triangle" style="width:14px;height:14px;"></i>
+                            {{ form_errors.project_name }}
+                        </div>
+                        {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label class="form-label">工程造价（万元）</label>
+                        {% if mode == 'view' %}
+                        <input type="text" class="form-control" value="{{ '%.4f'|format(project.project_cost|float) }}" readonly>
+                        {% else %}
+                        <input type="number" step="0.0001" class="form-control" name="project_cost" 
+                               value="{{ project.project_cost if project and project.project_cost else '' }}">
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label class="form-label">区域</label>
+                        {% if mode == 'view' %}
+                        <input type="text" class="form-control" value="{{ project.region or '' }}" readonly>
+                        {% else %}
+                        <select class="form-select" name="region">
+                            {% for region in region_choices %}
+                            <option value="{{ region }}" 
+                                    {% if project and project.region == region %}selected{% endif %}>
+                                {{ region if region else '请选择' }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        {% endif %}
+                    </div>
+                </div>                
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">参选证号码<span class="text-danger">*</span></label>
+                        {% if mode == 'view' %}
+                        <input type="text" class="form-control" value="{{ project.certificate_number }}" readonly>
+                        {% else %}
+                        <div class="input-group">
+                            <span class="input-group-text fw-bold">市政</span>
+                            <input type="text" 
+                                   class="form-control {% if form_errors and form_errors.certificate_number %}is-invalid{% endif %}" 
+                                   name="certificate_number_input" 
+                                   id="certificate_number_input" 
+                                   value="{% if project and project.certificate_number %}{{ project.certificate_number[2:] }}{% endif %}" 
+                                   maxlength="4" 
+                                   inputmode="numeric"
+                                   pattern="[0-9]{4}"
+                                   required 
+                                   placeholder="请输入四位数字，如：0001">
+                            <input type="hidden" name="certificate_number" id="certificate_number" 
+                                   value="{{ project.certificate_number if project else '' }}">
+                        </div>
+                        <div class="form-text">只需输入四位数字，系统自动添加"市政"前缀</div>
+                        {% if form_errors and form_errors.certificate_number %}
+                        <div class="invalid-feedback d-block" id="certificate_server_error">
+                            <i class="align-middle me-1" data-feather="alert-triangle" style="width:14px;height:14px;"></i>
+                            {{ form_errors.certificate_number }}
+                        </div>
+                        {% else %}
+                        <div class="invalid-feedback" id="certificate_error">请输入四位有效数字</div>
+                        {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label class="form-label">创建目标</label>
+                        {% if mode == 'view' %}
+                        <input type="text" class="form-control" value="{{ project.creation_target or '' }}" readonly>
+                        {% else %}
+                        <select class="form-select" name="creation_target">
+                            {% for target in target_choices %}
+                            <option value="{{ target }}" 
+                                    {% if project and project.creation_target == target %}selected{% endif %}>
+                                {{ target if target else '请选择' }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label class="form-label">状态<span class="text-danger">*</span></label>
+                        {% if mode == 'view' %}
+                        <input type="text" class="form-control" value="{{ project.status }}" readonly>
+                        {% else %}
+                        <div class="d-flex w-100" role="group" aria-label="状态选择" style="gap: 4px;">
+                            {% for status in status_choices[1:] %}
+                            {% set color_class = 'outline-success' if status == '正常' else ('outline-warning' if status == '待考评' else ('outline-info' if status == '已考评' else 'outline-danger')) %}
+                            <input type="radio" class="btn-check" name="status" id="status_{{ loop.index }}" value="{{ status }}"
+                                   {% if project and project.status == status %}checked{% elif not project and status == '正常' %}checked{% endif %} required>
+                            <label class="btn btn-{{ color_class }} flex-grow-1 text-center" for="status_{{ loop.index }}" style="flex-basis: 0;">{{ status }}</label>
+                            {% endfor %}
+                        </div>
+                        {% if form_errors and form_errors.status %}
+                        <div class="invalid-feedback d-block">
+                            <i class="align-middle me-1" data-feather="alert-triangle" style="width:14px;height:14px;"></i>
+                            {{ form_errors.status }}
+                        </div>
+                        {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">申报企业名称（全称）</label>
+                        {% if mode == 'view' %}
+                        <input type="text" class="form-control" value="{{ project.declaring_company or '' }}" readonly>
+                        {% else %}
+                        <input type="text" class="form-control" name="declaring_company" 
+                               value="{{ project.declaring_company if project else '' }}">
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label class="form-label">项目经理姓名</label>
+                        {% if mode == 'view' %}
+                        <input type="text" class="form-control" value="{{ project.project_manager or '' }}" readonly>
+                        {% else %}
+                        <input type="text" class="form-control" name="project_manager" 
+                               value="{{ project.project_manager if project else '' }}">
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label class="form-label">联系人及电话</label>
+                        {% if mode == 'view' %}
+                        <input type="text" class="form-control" value="{{ project.contact_phone or '' }}" readonly>
+                        {% else %}
+                        <input type="text" class="form-control" name="contact_phone" 
+                               value="{{ project.contact_phone if project else '' }}">
+                        {% endif %}
+                    </div>
+                </div>                
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">监理企业名称（全称）</label>
+                        {% if mode == 'view' %}
+                        <input type="text" class="form-control" value="{{ project.supervision_company or '' }}" readonly>
+                        {% else %}
+                        <input type="text" class="form-control" name="supervision_company" 
+                               value="{{ project.supervision_company if project else '' }}">
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">项目总监姓名</label>
+                        {% if mode == 'view' %}
+                        <input type="text" class="form-control" value="{{ project.project_director or '' }}" readonly>
+                        {% else %}
+                        <input type="text" class="form-control" name="project_director" 
+                               value="{{ project.project_director if project else '' }}">
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">建设单位名称（全称）</label>
+                        {% if mode == 'view' %}
+                        <input type="text" class="form-control" value="{{ project.construction_unit or '' }}" readonly>
+                        {% else %}
+                        <input type="text" class="form-control" name="construction_unit" 
+                               value="{{ project.construction_unit if project else '' }}">
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">参建企业名称（全称）</label>
+                        {% if mode == 'view' %}
+                        <input type="text" class="form-control" value="{{ project.participating_company or '' }}" readonly>
+                        {% else %}
+                        <input type="text" class="form-control" name="participating_company" 
+                               value="{{ project.participating_company if project else '' }}">
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">开工日期</label>
+                        {% if mode == 'view' %}
+                        <input type="text" class="form-control"
+                               value="{{ format_date(project.start_date if project else none) }}" readonly>
+                        {% else %}
+                        <input type="date" class="form-control" name="start_date"
+                               value="{{ format_date(project.start_date if project else none) }}">
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">竣工日期</label>
+                        {% if mode == 'view' %}
+                        <input type="text" class="form-control"
+                               value="{{ format_date(project.end_date if project else none) }}" readonly>
+                        {% else %}
+                        <input type="date" class="form-control" name="end_date"
+                               value="{{ format_date(project.end_date if project else none) }}">
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">施工许可证取得日期</label>
+                        {% if mode == 'view' %}
+                        <input type="text" class="form-control"
+                               value="{{ format_date(project.construction_permit_date if project else none) }}" readonly>
+                        {% else %}
+                        <input type="date" class="form-control" name="construction_permit_date"
+                               value="{{ format_date(project.construction_permit_date if project else none) }}">
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">标化工地申报时间</label>
+                        {% if mode == 'view' %}
+                        <input type="text" class="form-control"
+                               value="{{ format_date(project.standardization_application_date if project else none) }}" readonly>
+                        {% else %}
+                        <input type="date" class="form-control" name="standardization_application_date"
+                               value="{{ format_date(project.standardization_application_date if project else none) }}">
+                        {% endif %}
+                    </div>
+                </div>
+
+            </div>
+
+            {% if mode != 'add' %}
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">市标化检查时间</label>
+                        {% if mode == 'view' %}
+                        <input type="text" class="form-control"
+                               value="{{ format_date(project.city_standardization_inspection_date if project else none) }}" readonly>
+                        {% else %}
+                        <input type="date" class="form-control" name="city_standardization_inspection_date"
+                               value="{{ format_date(project.city_standardization_inspection_date if project else none) }}">
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label class="form-label">检查人员</label>
+                        {% if mode == 'view' %}
+                        <input type="text" class="form-control" value="{{ project.inspectors or '' }}" readonly>
+                        {% else %}
+                        <input type="text" class="form-control" name="inspectors" 
+                               value="{{ project.inspectors if project else '' }}">
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label class="form-label">初评得分</label>
+                        {% if mode == 'view' %}
+                        <input type="text" class="form-control" value="{{ project.pre_score or '' }}" readonly>
+                        {% else %}
+                        <input type="number" step="0.01" class="form-control" name="pre_score" 
+                               value="{{ project.pre_score if project and project.pre_score else '' }}">
+                        {% endif %}
+                    </div>
+                </div>                
+            </div>
+            {% endif %}
+
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="mb-3">
+                        <label class="form-label">备注</label>
+                        {% if mode == 'view' %}
+                        <input type="text" class="form-control" value="{{ project.remarks or '' }}" readonly>
+                        {% else %}
+                        <input type="text" class="form-control" name="remarks" 
+                               value="{{ project.remarks if project else '' }}">
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-3">
+                <div class="col-12">
+                    <div class="d-flex justify-content-end gap-2">
+                        {% if mode == 'add' %}
+                        <button type="submit" class="btn btn-primary">
+                            <i class="align-middle" data-feather="save"></i> 保存
+                        </button>
+                        <!--
+                        <button type="button" class="btn btn-outline-secondary" onclick="ProjectModal.close()">
+                            <i class="align-middle" data-feather="x"></i> 取消
+                        </button>
+                        -->
+                        {% elif mode == 'edit' %}
+                        <button type="button" class="btn btn-outline-danger" id="deleteBtn">
+                            <i class="align-middle" data-feather="trash-2"></i> 删除
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="align-middle" data-feather="save"></i> 保存
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="ProjectModal.view({{ project_id }})">
+                            <i class="align-middle" data-feather="arrow-left"></i> 返回
+                        </button>
+                        {% else %}
+                        <button type="button" class="btn btn-primary" onclick="ProjectModal.edit({{ project.id }})">
+                            <i class="align-middle" data-feather="edit"></i> 编辑
+                        </button>
+                        <!--
+                        <button type="button" class="btn btn-outline-secondary" onclick="ProjectModal.close()">
+                            <i class="align-middle" data-feather="x"></i> 关闭
+                        </button>
+                        -->
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>

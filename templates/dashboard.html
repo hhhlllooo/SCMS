@@ -1,0 +1,519 @@
+{% extends "base.html" %}
+
+{% block title %}仪表盘 - 工程项目管理系统{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+    <h1 class="h3 mb-3"><strong>仪表盘</strong></h1>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-6 col-lg-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h5 class="card-title text-muted mb-2">项目总数</h5>
+                        <h2 class="mb-0">{{ total_projects }}</h2>
+                    </div>
+                    <div class="stat text-primary">
+                        <i class="align-middle" data-feather="folder"></i>
+                    </div>
+                </div>
+                <small class="text-muted">工程项目总数</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-6 col-lg-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h5 class="card-title text-muted mb-2">正常项目</h5>
+                        <h2 class="mb-0">{{ status_stats.get('正常', 0) }}</h2>
+                    </div>
+                    <div class="stat text-success">
+                        <i class="align-middle" data-feather="check-circle"></i>
+                    </div>
+                </div>
+                <small class="text-muted">状态为正常</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-6 col-lg-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h5 class="card-title text-muted mb-2">待考评项目</h5>
+                        <h2 class="mb-0">{{ status_stats.get('待考评', 0) }}</h2>
+                    </div>
+                    <div class="stat text-warning">
+                        <i class="align-middle" data-feather="clock"></i>
+                    </div>
+                </div>
+                <small class="text-muted">等待考评</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-6 col-lg-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h5 class="card-title text-muted mb-2">许可证数</h5>
+                        <h2 class="mb-0">{{ status_stats.get('许可证', 0) }}</h2>
+                    </div>
+                    <div class="stat text-secondary">
+                        <i class="align-middle" data-feather="file-text"></i>
+                    </div>
+                </div>
+                <small class="text-muted">状态为许可证</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-12 col-lg-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">状态分布</h5>
+            </div>
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-12 col-md-6">
+                        <div class="chart" style="height: 200px;">
+                            <canvas id="statusChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <table class="table table-sm mb-0">
+                            <tbody>
+                                <tr>
+                                    <td><span class="badge bg-success">正常</span></td>
+                                    <td class="text-end"><strong>{{ status_stats.get('正常', 0) }}</strong> 个</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="badge bg-warning text-dark">待考评</span></td>
+                                    <td class="text-end"><strong>{{ status_stats.get('待考评', 0) }}</strong> 个</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="badge bg-secondary">许可证</span></td>
+                                    <td class="text-end"><strong>{{ status_stats.get('许可证', 0) }}</strong> 个</td>
+                                </tr>
+                                <tr class="table-light">
+                                    <td><strong>合计</strong></td>
+                                    <td class="text-end"><strong>{{ focus_total }}</strong> 个</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-lg-6">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">区域分布</h5>
+                <div class="btn-group btn-group-sm" role="group" aria-label="区域分布视图切换">
+                    <button type="button" class="btn btn-outline-primary active" id="regionChartBtn" onclick="toggleRegionView('chart')">
+                        <i class="align-middle" data-feather="bar-chart-2"></i> 图表
+                    </button>
+                    <button type="button" class="btn btn-outline-primary" id="regionTableBtn" onclick="toggleRegionView('table')">
+                        <i class="align-middle" data-feather="list"></i> 表格
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="regionChartView" class="chart" style="height: 300px;">
+                    <canvas id="regionChart"></canvas>
+                </div>
+                <div id="regionTableView" style="display: none; height: 300px; overflow-y: auto;">
+                    <table class="table table-sm table-bordered mb-0">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th class="text-center">区域</th>
+                                <th class="text-center">正常</th>
+                                <th class="text-center">待考评</th>
+                                <th class="text-center">许可证</th>
+                                <th class="text-center">合计</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for region in region_choices %}
+                                {% if region %}
+                                    {% set normal_count = region_status_data.get(region, {}).get('正常', 0) %}
+                                    {% set pending_count = region_status_data.get(region, {}).get('待考评', 0) %}
+                                    {% set permit_count = region_status_data.get(region, {}).get('许可证', 0) %}
+                                    {% set region_sum = normal_count + pending_count + permit_count %}
+                                    <tr>
+                                        <td class="text-center"><strong>{{ region }}</strong></td>
+                                        <td class="text-center"><span class="badge bg-success">{{ normal_count }}</span></td>
+                                        <td class="text-center"><span class="badge bg-warning text-dark">{{ pending_count }}</span></td>
+                                        <td class="text-center"><span class="badge bg-secondary">{{ permit_count }}</span></td>
+                                        <td class="text-center"><strong>{{ region_sum }}</strong></td>
+                                    </tr>
+                                {% endif %}
+                            {% endfor %}
+                            <tr class="table-light">
+                                <td class="text-center"><strong>合计</strong></td>
+                                <td class="text-center"><strong>{{ status_stats.get('正常', 0) }}</strong></td>
+                                <td class="text-center"><strong>{{ status_stats.get('待考评', 0) }}</strong></td>
+                                <td class="text-center"><strong>{{ status_stats.get('许可证', 0) }}</strong></td>
+                                <td class="text-center"><strong>{{ focus_total }}</strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-12 col-lg-6">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">项目统计</h5>
+                <div class="dropdown">
+                    <button class="btn btn-outline-primary btn-sm dropdown-toggle" type="button" id="yearDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        {{ selected_year }}年
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="yearDropdown">
+                        {% for year in available_years %}
+                        <li><a class="dropdown-item {% if year == selected_year %}active{% endif %}" href="?year={{ year }}">{{ year }}年</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            <div class="card-body">                
+                <ul class="nav nav-tabs mb-3" id="statsTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="monthly-tab" data-bs-toggle="tab" data-bs-target="#monthly" type="button" role="tab">月度统计</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="quarterly-tab" data-bs-toggle="tab" data-bs-target="#quarterly" type="button" role="tab">季度统计</button>
+                    </li>
+                </ul>
+                
+                <div class="tab-content" id="statsTabContent">
+                    <div class="tab-pane fade show active" id="monthly" role="tabpanel">
+                        <div class="table-responsive" style="max-height: 230px;">
+                            <table class="table table-sm table-bordered mb-0">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th class="text-center" style="width: 80px;">月份</th>
+                                        <th class="text-center">新增项目</th>
+                                        <th class="text-center">考评项目</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for month in range(1, 13) %}
+                                    <tr>
+                                        <td class="text-center"><strong>{{ month }}月</strong></td>
+                                        <td class="text-center">{{ monthly_new_projects.get(month, 0) }}</td>
+                                        <td class="text-center">{{ monthly_inspection_projects.get(month, 0) }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                    <tr class="table-light">
+                                        <td class="text-center"><strong>合计</strong></td>
+                                        <td class="text-center"><strong>{{ total_new_projects }}</strong></td>
+                                        <td class="text-center"><strong>{{ total_inspection_projects }}</strong></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="quarterly" role="tabpanel">
+                        <div class="table-responsive" >
+                            <table class="table table-sm table-bordered mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="text-center" style="width: 100px;">季度</th>
+                                        <th class="text-center">新增项目</th>
+                                        <th class="text-center">考评项目</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="text-center"><strong>Q1 (1-3月)</strong></td>
+                                        <td class="text-center">{{ quarterly_new_projects.Q1 }}</td>
+                                        <td class="text-center">{{ quarterly_inspection_projects.Q1 }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center"><strong>Q2 (4-6月)</strong></td>
+                                        <td class="text-center">{{ quarterly_new_projects.Q2 }}</td>
+                                        <td class="text-center">{{ quarterly_inspection_projects.Q2 }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center"><strong>Q3 (7-9月)</strong></td>
+                                        <td class="text-center">{{ quarterly_new_projects.Q3 }}</td>
+                                        <td class="text-center">{{ quarterly_inspection_projects.Q3 }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center"><strong>Q4 (10-12月)</strong></td>
+                                        <td class="text-center">{{ quarterly_new_projects.Q4 }}</td>
+                                        <td class="text-center">{{ quarterly_inspection_projects.Q4 }}</td>
+                                    </tr>
+                                    <tr class="table-light">
+                                        <td class="text-center"><strong>年度合计</strong></td>
+                                        <td class="text-center"><strong>{{ total_new_projects }}</strong></td>
+                                        <td class="text-center"><strong>{{ total_inspection_projects }}</strong></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-lg-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">月度趋势</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart" style="height: 300px;">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">最近项目</h5>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>工程名称</th>
+                            <th>申报企业</th>
+                            <th>区域</th>
+                            <th>工程造价(万元)</th>
+                            <th>状态</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for project in recent_projects %}
+                        <tr style="cursor: pointer;" onclick="window.location.href='{{ url_for('project_view', id=project.id) }}'">
+                            <td>{{ project.project_name[:25] + '...' if project.project_name|length > 25 else project.project_name }}</td>
+                            <td>{{ project.declaring_company[:20] + '...' if project.declaring_company and project.declaring_company|length > 20 else project.declaring_company or '-' }}</td>
+                            <td>{{ project.region or '-' }}</td>
+                            <td>{{ "%.4f"|format(project.project_cost|float) if project.project_cost else '-' }}</td>
+                            <td>
+                                {% if project.status == '正常' %}
+                                <span class="badge bg-success">{{ project.status }}</span>
+                                {% elif project.status == '待考评' %}
+                                <span class="badge bg-warning text-dark">{{ project.status }}</span>
+                                {% elif project.status == '已考评' %}
+                                <span class="badge bg-info">{{ project.status }}</span>
+                                {% elif project.status == '许可证' %}
+                                <span class="badge bg-secondary">{{ project.status }}</span>
+                                {% else %}
+                                <span class="badge bg-primary">{{ project.status }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">暂无项目数据</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var statusCtx = document.getElementById('statusChart').getContext('2d');
+    var statusChart = new Chart(statusCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['正常', '待考评', '许可证'],
+            datasets: [{
+                data: [
+                    {{ status_stats.get('正常', 0) }},
+                    {{ status_stats.get('待考评', 0) }},
+                    {{ status_stats.get('许可证', 0) }}
+                ],
+                backgroundColor: ['#28a745', '#ffc107', '#6c757d'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            legend: {
+                display: false
+            },
+            cutoutPercentage: 60
+        }
+    });
+
+    var regionLabels = [
+        {% for region in region_choices %}
+            {% if region %}'{{ region }}',{% endif %}
+        {% endfor %}
+    ];
+    
+    var normalData = [
+        {% for region in region_choices %}
+            {% if region %}{{ region_status_data.get(region, {}).get('正常', 0) }},{% endif %}
+        {% endfor %}
+    ];
+    
+    var pendingData = [
+        {% for region in region_choices %}
+            {% if region %}{{ region_status_data.get(region, {}).get('待考评', 0) }},{% endif %}
+        {% endfor %}
+    ];
+    
+    var permitData = [
+        {% for region in region_choices %}
+            {% if region %}{{ region_status_data.get(region, {}).get('许可证', 0) }},{% endif %}
+        {% endfor %}
+    ];
+
+    var regionCtx = document.getElementById('regionChart').getContext('2d');
+    var regionChart = new Chart(regionCtx, {
+        type: 'bar',
+        data: {
+            labels: regionLabels,
+            datasets: [
+                {
+                    label: '正常',
+                    data: normalData,
+                    backgroundColor: '#28a745',
+                    borderWidth: 0
+                },
+                {
+                    label: '待考评',
+                    data: pendingData,
+                    backgroundColor: '#ffc107',
+                    borderWidth: 0
+                },
+                {
+                    label: '许可证',
+                    data: permitData,
+                    backgroundColor: '#6c757d',
+                    borderWidth: 0
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            legend: {
+                display: true,
+                position: 'top'
+            },
+            scales: {
+                xAxes: [{
+                    stacked: true,
+                    ticks: {
+                        autoSkip: false,
+                        maxRotation: 45,
+                        minRotation: 45
+                    }
+                }],
+                yAxes: [{
+                    stacked: true,
+                    ticks: {
+                        beginAtZero: true,
+                        stepSize: 1
+                    }
+                }]
+            }
+        }
+    });
+
+    var monthLabels = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+    var newProjectData = [
+        {% for month in range(1, 13) %}{{ monthly_new_projects.get(month, 0) }},{% endfor %}
+    ];
+    var inspectionData = [
+        {% for month in range(1, 13) %}{{ monthly_inspection_projects.get(month, 0) }},{% endfor %}
+    ];
+
+    var trendCtx = document.getElementById('trendChart').getContext('2d');
+    var trendChart = new Chart(trendCtx, {
+        type: 'line',
+        data: {
+            labels: monthLabels,
+            datasets: [
+                {
+                    label: '新增项目',
+                    data: newProjectData,
+                    borderColor: '#3b7ddd',
+                    backgroundColor: 'rgba(59, 125, 221, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.3
+                },
+                {
+                    label: '考评项目',
+                    data: inspectionData,
+                    borderColor: '#28a745',
+                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.3
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            legend: {
+                display: true,
+                position: 'top'
+            },
+            scales: {
+                yAxes: [{
+                    ticks: {
+                        beginAtZero: true,
+                        stepSize: 1
+                    }
+                }]
+            }
+        }
+    });
+});
+
+function toggleRegionView(view) {
+    var chartView = document.getElementById('regionChartView');
+    var tableView = document.getElementById('regionTableView');
+    var chartBtn = document.getElementById('regionChartBtn');
+    var tableBtn = document.getElementById('regionTableBtn');
+    
+    if (view === 'chart') {
+        chartView.style.display = 'block';
+        tableView.style.display = 'none';
+        chartBtn.classList.add('active');
+        tableBtn.classList.remove('active');
+    } else {
+        chartView.style.display = 'none';
+        tableView.style.display = 'block';
+        chartBtn.classList.remove('active');
+        tableBtn.classList.add('active');
+    }
+}
+</script>
+{% endblock %}
