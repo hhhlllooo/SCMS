@@ -119,33 +119,72 @@ SECRET_KEY=<your-secret-key>
 
 #### 6. 启动应用
 
+**模块化架构启动方式：**
+
 ```bash
-python app.py
+# 方式一：使用 Python 模块运行
+python -m app
+
+# 方式二：直接运行 app 包
+python app/__init__.py
+
+# 方式三：使用 Flask 命令（需设置 FLASK_APP）
+export FLASK_APP=app
+flask run
 ```
 
 访问 http://127.0.0.1:5000 即可使用系统。
 
+> **注意**：原 `app.py` 已重构为模块化架构，旧版本备份在 `app_legacy_backup.py`。
+
 ## 📁 项目结构
+
+### 重构后的模块化结构
 
 ```
 .
-├── app.py                 # 主应用程序入口
-├── requirements.txt       # Python 依赖列表
-├── .env                   # 环境变量配置
-├── .gitignore            # Git 忽略规则
-├── LICENSE               # 许可证文件
-├── README.md             # 本文件
-├── data/                 # 数据库目录（运行时创建）
-│   └── scms.db          # SQLite 数据库文件
-├── docs/                 # 项目文档
+├── app/                     # 主应用包（模块化架构）
+│   ├── __init__.py         # 应用工厂和初始化
+│   ├── config/             # 配置模块
+│   │   ├── __init__.py
+│   │   └── settings.py     # 应用配置类
+│   ├── models/             # 数据模型
+│   │   ├── __init__.py
+│   │   └── project.py      # Project 模型
+│   ├── routes/             # 路由蓝图
+│   │   ├── __init__.py
+│   │   ├── main.py         # 主页和仪表盘路由
+│   │   ├── projects.py     # 项目管理路由
+│   │   └── auth.py         # 认证路由
+│   ├── services/           # 业务逻辑层
+│   │   ├── __init__.py
+│   │   └── project_service.py  # 项目业务逻辑
+│   └── utils/              # 工具函数
+│       ├── __init__.py
+│       ├── ocr_helper.py   # OCR 辅助函数
+│       └── response_helpers.py  # 响应助手
+│
+├── app_legacy_backup.py    # 原始单文件版本（备份）
+├── requirements.txt        # Python 依赖列表
+├── .env                    # 环境变量配置
+├── .gitignore             # Git 忽略规则
+├── LICENSE                # 许可证文件
+├── README.md              # 本文件
+│
+├── data/                  # 数据库目录（运行时创建）
+│   └── scms.db           # SQLite 数据库文件
+│
+├── docs/                  # 项目文档
 │   ├── 数据库设计文档.md
 │   ├── 程序功能说明文档.md
 │   ├── 部署文档.md
 │   └── 项目架构设计文档.md
+│
 ├── static/               # 静态资源
 │   ├── css/             # 样式文件
 │   ├── js/              # JavaScript 文件
 │   └── img/             # 图片资源
+│
 ├── templates/            # HTML 模板
 │   ├── base.html        # 基础模板
 │   ├── dashboard.html   # 仪表盘页面
@@ -154,8 +193,17 @@ python app.py
 │   ├── pending_list.html # 待考评列表页面
 │   ├── evaluation_form.html # 考评表单页面
 │   └── settings.html    # 系统设置页面
+│
 └── uploads/              # 上传文件目录（运行时创建）
 ```
+
+### 架构说明
+
+- **应用工厂模式**：`app/__init__.py` 中的 `create_app()` 函数负责初始化和配置应用实例
+- **蓝图路由**：不同功能模块的路由分离到独立的蓝图中，便于维护和扩展
+- **服务层**：业务逻辑封装在 `services` 目录中，实现业务逻辑与路由的分离
+- **配置管理**：支持多环境配置，通过 `Config` 类统一管理
+- **模型层**：数据库模型集中在 `models` 目录，便于 ORM 管理
 
 ## ⚙️ 配置说明
 
@@ -168,13 +216,27 @@ python app.py
 
 ### 应用配置
 
-在 `app.py` 中可修改以下配置：
+在 `app/config/settings.py` 中可修改以下配置：
 
 ```python
-app.config['SQLALCHEMY_DATABASE_URI']  # 数据库连接 URI
-app.config['PER_PAGE']                  # 每页显示记录数（默认 20）
-app.config['UPLOAD_FOLDER']             # 上传文件目录（默认 'uploads'）
-app.config['BACKUP_FOLDER']             # 数据库备份目录（默认 'data/backups'）
+class Config:
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///data/scms.db'  # 数据库连接 URI
+    PER_PAGE = 20                                        # 每页显示记录数
+    UPLOAD_FOLDER = 'uploads'                            # 上传文件目录
+    BACKUP_FOLDER = 'data/backups'                       # 数据库备份目录
+    SECRET_KEY = os.environ.get('SECRET_KEY', 'default-key')
+```
+
+### 多环境配置
+
+系统支持多环境配置（开发、测试、生产），可通过环境变量切换：
+
+```bash
+# 开发环境
+export FLASK_ENV=development
+
+# 生产环境
+export FLASK_ENV=production
 ```
 
 ## 📖 使用说明
@@ -236,6 +298,12 @@ A: 数据库文件位于 `data/scms.db`，备份文件位于 `data/backups/`。
 ### Q: 支持哪些浏览器？
 A: 推荐使用 Chrome、Firefox、Edge 等现代浏览器的最新版本。
 
+### Q: 重构后如何运行项目？
+A: 使用 `python -m app` 或 `python app/__init__.py` 启动应用。原 `app.py` 已备份为 `app_legacy_backup.py`。
+
+### Q: 为什么要进行模块化重构？
+A: 模块化架构提高了代码的可维护性、可测试性和可扩展性，便于团队协作和后续功能迭代。
+
 ## 📄 许可证
 
 本项目采用 MIT 许可证。详见 [LICENSE](LICENSE) 文件。
@@ -253,3 +321,5 @@ A: 推荐使用 Chrome、Firefox、Edge 等现代浏览器的最新版本。
 ---
 
 **注意**：生产环境部署时，请务必修改默认的 `SECRET_KEY` 和密码哈希，以确保系统安全。
+
+**重构说明**：本项目已完成模块化重构，将原 1500+ 行的单文件应用拆分为清晰的模块化架构，提升了代码质量和可维护性。详见 [项目架构设计文档](docs/项目架构设计文档.md)。
